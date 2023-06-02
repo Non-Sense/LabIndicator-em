@@ -1,0 +1,52 @@
+package com.n0n5ense.labindicator.bot
+
+internal class StringAsset {
+    companion object {
+        const val updateCommandDescription = "Update your status"
+        const val updateCommandDescriptionJp = "入室状態を更新します"
+        const val updateOptionDescription = "Your status"
+        const val updateOptionDescriptionJp = "在室状態"
+        const val updateOptionName = "status"
+        const val updateOptionNameJp = "状態"
+        const val willReturnCommandDescription = """Set status to "Will return at""""
+        const val willReturnCommandDescriptionJp = "「何時に戻る」状態に設定します"
+        const val hour = "hour"
+        const val descriptionHour = "Hour(0~23)"
+        const val descriptionHourJp = "時(0~23)"
+        const val minute = "minute"
+        const val descriptionMinute = "Minute(0 or 30)"
+        const val descriptionMinuteJp = "分(0か30)"
+
+        const val addChannelCommand = "!showhere"
+        const val removeChannelCommand = "!getouthere"
+
+        const val memberCommandDescription = "メンバーと対応関係を管理します"
+        const val memberAddSubCommandName = "add"
+        const val memberAddSubCommandDescription = "Add user"
+        const val memberAddSubCommandDescriptionJp = "人間を追加する"
+        const val memberRemoveSubCommandName = "remove"
+        const val memberRemoveSubCommandDescription = "remove user"
+        const val memberRemoveSubCommandDescriptionJp = "人間を消す"
+        const val memberUpdateSubCommandName = "update"
+        const val memberUpdateSubCommandDescription = "Update user info"
+        const val memberUpdateSubCommandDescriptionJp = "情報更新"
+        const val memberUserOptionName = "user"
+        const val memberUserOptionDescription = "Target user"
+        const val memberUserOptionDescriptionJp = "対象の人間"
+        const val memberNameOptionName = "name"
+        const val memberNameOptionDescription = "Name"
+        const val memberNameOptionDescriptionJp = "名前"
+        const val memberOrderOptionName = "order"
+        const val memberOrderOptionDescription = "Display position"
+        const val memberOrderOptionDescriptionJp = "表示位置"
+        const val memberCommandGenericError = "オプション指定が間違っていそうです"
+
+        const val showChannelCommandDescription = "Register a channel for show the indicator"
+        const val showChannelCommandDescriptionJp = "インジケータを表示するチャンネルを登録します"
+        const val showChannelOptionName = "channel"
+        const val isNotTextChannelError = "This channel is not text channel"
+        const val isNotTextChannelErrorJp = "指定したチャンネルはテキストチャンネルではないようです"
+        const val alreadyExistsChannelError = "This channel is already registered\nPlease unregister and try again"
+        const val alreadyExistsChannelErrorJp = "すでに登録済みのようです\n登録解除してからもう一度試してください"
+    }
+}
