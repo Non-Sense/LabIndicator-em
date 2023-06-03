@@ -1,4 +1,4 @@
-package com.n0n5ense.labindicator.api
+package com.n0n5ense.labindicator.server
 
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
