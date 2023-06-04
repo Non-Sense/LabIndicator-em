@@ -5,7 +5,6 @@ import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
-import java.util.*
 
 private lateinit var audience: String
 private lateinit var issuer: String
@@ -35,39 +34,39 @@ fun Application.configureSecurity(environment: ApplicationEnvironment) {
     }
 }
 
-class Security {
-    companion object {
-        private val refreshTokenVerifier = JWT
-            .require(algorithm)
-            .withAudience("${audience}_ref")
-            .withIssuer(issuer)
-            .build()
-
-        fun validateRefreshToken(token: RefreshToken): String? {
-            val jwt = kotlin.runCatching {
-                refreshTokenVerifier.verify(token.refreshToken)!!
-            }.getOrElse { return null }
-            return jwt.claims["id"]?.asString()
-        }
-
-        fun createRefreshToken(loginUser: LoginUser): String {
-            return JWT.create()
-                .withAudience("${audience}_ref")
-                .withClaim("id", loginUser.id)
-                .withIssuer(issuer)
-                .sign(algorithm)
-        }
-
-        fun createAccessToken(userId: String): String? {
-            val user = UserService.get(userId) ?: return null
-            if(!user.enabled)
-                return null
-            return JWT.create()
-                .withAudience(audience)
-                .withExpiresAt(Date(Date().time + 60000))
-                .withClaim("id", userId)
-                .withIssuer(issuer)
-                .sign(algorithm)
-        }
-    }
-}
+//class Security {
+//    companion object {
+//        private val refreshTokenVerifier = JWT
+//            .require(algorithm)
+//            .withAudience("${audience}_ref")
+//            .withIssuer(issuer)
+//            .build()
+//
+//        fun validateRefreshToken(token: RefreshToken): String? {
+//            val jwt = kotlin.runCatching {
+//                refreshTokenVerifier.verify(token.refreshToken)!!
+//            }.getOrElse { return null }
+//            return jwt.claims["id"]?.asString()
+//        }
+//
+//        fun createRefreshToken(loginUser: LoginUser): String {
+//            return JWT.create()
+//                .withAudience("${audience}_ref")
+//                .withClaim("id", loginUser.id)
+//                .withIssuer(issuer)
+//                .sign(algorithm)
+//        }
+//
+//        fun createAccessToken(userId: String): String? {
+//            val user = UserService.get(userId) ?: return null
+//            if(!user.enabled)
+//                return null
+//            return JWT.create()
+//                .withAudience(audience)
+//                .withExpiresAt(Date(Date().time + 60000))
+//                .withClaim("id", userId)
+//                .withIssuer(issuer)
+//                .sign(algorithm)
+//        }
+//    }
+//}
