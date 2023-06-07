@@ -11,28 +11,42 @@ data class User(
     val id: String,
     val name: String,
     val grade: String,
-    val isActive: Boolean,
+    val discordId: String? = null,
+    val password: String? = null,
     @ManyToMany
     @JoinTable(name = "user_permissions")
-    val permissions: List<Permission>
+    val permissions: List<Permission> = listOf(),
+    val isActive: Boolean = true,
 )
 
 @Entity
 data class Permission(
-    @Id @GeneratedValue
-    val id: Long? = null,
+    @Id
     @Enumerated(EnumType.STRING)
-    val permission: Permissions
+    @Convert(converter = PermissionConverter::class)
+    @Column(name = "id")
+    val permission: Permissions,
 )
+
+@Converter
+class PermissionConverter : AttributeConverter<Permissions, String> {
+    override fun convertToDatabaseColumn(attribute: Permissions): String {
+        return attribute.name
+    }
+
+    override fun convertToEntityAttribute(dbData: String): Permissions {
+        return Permissions.valueOf(dbData)
+    }
+}
 
 @Entity
 data class Status(
-    @Id @GeneratedValue
-    val id: Long,
-    val time: LocalDateTime,
     @ManyToOne
-    @JoinColumn
+    @JoinColumn(name = "user_id")
     val user: User,
     @Enumerated(EnumType.STRING)
-    val status: RoomStatus
+    val status: RoomStatus,
+    @Id @GeneratedValue
+    val id: Long? = null,
+    val time: LocalDateTime = LocalDateTime.now(),
 )

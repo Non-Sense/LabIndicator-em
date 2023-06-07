@@ -1,8 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.7.10"
-    kotlin("kapt") version "1.7.10"
+    kotlin("jvm")
+    kotlin("kapt")
 }
 
 group = "com.n0n5ense"
@@ -21,7 +21,7 @@ dependencies {
     implementation("org.xerial:sqlite-jdbc:3.40.1.0")
 
     implementation("com.fasterxml.uuid:java-uuid-generator:4.2.0")
-
+    implementation("ch.qos.logback:logback-classic:1.4.6")
 
     val krushVersion = "1.2.1"
     api("pl.touk.krush:krush-annotation-processor:$krushVersion")

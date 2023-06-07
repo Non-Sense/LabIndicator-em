@@ -7,11 +7,9 @@ internal fun Application.configureRouting(
 
 ) {
     routing {
-
         route("/api") {
-            route("/v1") {
-                v1Api()
-            }
+            statusApi()
+            authApi()
         }
     }
 }

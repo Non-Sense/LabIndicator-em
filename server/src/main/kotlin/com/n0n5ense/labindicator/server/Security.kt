@@ -2,71 +2,66 @@ package com.n0n5ense.labindicator.server
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import com.n0n5ense.labindicator.database.entity.User
+import com.n0n5ense.labindicator.server.model.AccessToken
+import com.n0n5ense.labindicator.server.model.RefreshToken
+import com.n0n5ense.labindicator.server.model.UserId
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
+import java.util.*
 
-private lateinit var audience: String
-private lateinit var issuer: String
 private lateinit var algorithm: Algorithm
 
-fun Application.configureSecurity(environment: ApplicationEnvironment) {
+fun Application.configureSecurity(secret: String) {
 
     authentication {
         jwt {
-            audience = environment.config.property("jwt.audience").getString()
-            algorithm = Algorithm.HMAC256(environment.config.property("jwt.secret").getString())
-            issuer = environment.config.property("jwt.domain").getString()
-            realm = environment.config.property("jwt.realm").getString()
+            algorithm = Algorithm.HMAC256(secret)
             verifier(
                 JWT
                     .require(algorithm)
-                    .withAudience(audience)
-                    .withIssuer(issuer)
+                    .withClaim("acs", true)
                     .build()
             )
-            validate { credential ->
-                if(credential.payload.audience.contains(audience)) {
-                    JWTPrincipal(credential.payload)
-                } else null
-            }
         }
     }
 }
 
-//class Security {
-//    companion object {
-//        private val refreshTokenVerifier = JWT
-//            .require(algorithm)
-//            .withAudience("${audience}_ref")
-//            .withIssuer(issuer)
-//            .build()
-//
-//        fun validateRefreshToken(token: RefreshToken): String? {
-//            val jwt = kotlin.runCatching {
-//                refreshTokenVerifier.verify(token.refreshToken)!!
-//            }.getOrElse { return null }
-//            return jwt.claims["id"]?.asString()
-//        }
-//
-//        fun createRefreshToken(loginUser: LoginUser): String {
-//            return JWT.create()
-//                .withAudience("${audience}_ref")
-//                .withClaim("id", loginUser.id)
-//                .withIssuer(issuer)
-//                .sign(algorithm)
-//        }
-//
-//        fun createAccessToken(userId: String): String? {
-//            val user = UserService.get(userId) ?: return null
-//            if(!user.enabled)
-//                return null
-//            return JWT.create()
-//                .withAudience(audience)
-//                .withExpiresAt(Date(Date().time + 60000))
-//                .withClaim("id", userId)
-//                .withIssuer(issuer)
-//                .sign(algorithm)
-//        }
-//    }
-//}
+class Security {
+    companion object {
+        private val refreshTokenVerifier = JWT
+            .require(algorithm)
+            .withClaim("ref", true)
+            .build()
+
+        fun validateRefreshToken(token: RefreshToken): UserId? {
+            val jwt = kotlin.runCatching {
+                refreshTokenVerifier.verify(token.refresh)!!
+            }.getOrElse { return null }
+            return jwt.claims["id"]?.asString()?.let { UserId(it) }
+        }
+
+        fun createRefreshToken(user: User): RefreshToken? {
+            if(!user.isActive)
+                return null
+            return JWT.create()
+                .withExpiresAt(Date(Date().time + 86400000L))
+                .withClaim("id", user.id)
+                .withClaim("ref", true)
+                .sign(algorithm)
+                .let { RefreshToken(it) }
+        }
+
+        fun createAccessToken(user: User): AccessToken? {
+            if(!user.isActive)
+                return null
+            return JWT.create()
+                .withExpiresAt(Date(Date().time + 300000L))
+                .withClaim("acs", true)
+                .withClaim("id", user.id)
+                .sign(algorithm)
+                .let { AccessToken(it) }
+        }
+    }
+}

@@ -6,6 +6,7 @@ import com.n0n5ense.labindicator.database.entity.*
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.batchInsert
+import org.jetbrains.exposed.sql.exists
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.sql.Connection
@@ -18,10 +19,12 @@ fun connectToDatabase(databasePath: String) {
 
 private fun initDatabase() {
     transaction {
-        SchemaUtils.drop(PermissionTable)
+        val permissionTableCreated = !PermissionTable.exists()
         SchemaUtils.create(UserTable, PermissionTable, UserPermissionsTable, StatusTable)
-        PermissionTable.batchInsert(Permissions.values().asSequence()) {
-            from(Permission(permission = it))
+        if(permissionTableCreated) {
+            PermissionTable.batchInsert(Permissions.values().asSequence()) {
+                from(Permission(it))
+            }
         }
     }
 }
