@@ -1,15 +1,53 @@
 package com.n0n5ense.labindicator.database.repository
 
-import com.n0n5ense.labindicator.database.entity.*
+import com.n0n5ense.labindicator.common.Permissions
+import com.n0n5ense.labindicator.database.dto.Status
+import com.n0n5ense.labindicator.database.dto.StatusToDisplay
+import com.n0n5ense.labindicator.database.dto.User
+import com.n0n5ense.labindicator.database.table.StatusTable
+import com.n0n5ense.labindicator.database.table.UserPermissionTable
+import com.n0n5ense.labindicator.database.table.UserTable
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction
+
+private fun ResultRow.toUser(): User {
+    return User(
+        userId = this[UserTable.id].value,
+        name = this[UserTable.name],
+        grade = this[UserTable.grade],
+        discordId = this[UserTable.discordId],
+        password = this[UserTable.password],
+        isActive = this[UserTable.isActive],
+        display = this[UserTable.display]
+    )
+}
 
 class UserRepository {
     companion object {
-        fun add(user: User): Result<User> {
+        private fun <T> UpdateBuilder<T>.from(user: User) {
+            this[UserTable.id] = user.userId
+            this[UserTable.name] = user.name
+            this[UserTable.grade] = user.grade
+            this[UserTable.discordId] = user.discordId
+            this[UserTable.password] = user.password
+            this[UserTable.isActive] = user.isActive
+            this[UserTable.display] = user.display
+        }
+
+        fun add(user: User): Result<Boolean> {
             return kotlin.runCatching {
                 transaction {
-                    UserTable.insert(user)
+                    val insertedCount = UserTable.insertIgnore {
+                        it.from(user)
+                    }.insertedCount
+                    if(user.permissions.isNotEmpty()) {
+                        UserPermissionTable.batchInsert(user.permissions) {
+                            this[UserPermissionTable.permissionId] = it
+                            this[UserPermissionTable.userId] = user.userId
+                        }
+                    }
+                    insertedCount != 0
                 }
             }
         }
@@ -31,10 +69,29 @@ class UserRepository {
             }
         }
 
+        fun getUserPermissions(id: String): Result<List<Permissions>> {
+            return kotlin.runCatching {
+                transaction {
+                    UserPermissionTable.select { UserPermissionTable.userId eq id }
+                        .map { it[UserPermissionTable.permissionId] }
+                }
+            }
+        }
+
+        fun hasPermission(id: String, permission: Permissions): Result<Boolean> {
+            return kotlin.runCatching {
+                transaction {
+                    UserPermissionTable.select {
+                        (UserPermissionTable.userId eq id) and (UserPermissionTable.permissionId eq permission)
+                    }.count() != 0L
+                }
+            }
+        }
+
         fun update(user: User): Result<Int> {
             return kotlin.runCatching {
                 transaction {
-                    UserTable.update(where = { UserTable.id eq user.id }) {
+                    UserTable.update(where = { UserTable.id eq user.userId }) {
                         it.from(user)
                     }
                 }
@@ -45,21 +102,25 @@ class UserRepository {
 
 class StatusRepository {
     companion object {
-        fun add(status: Status): Result<Status> {
+        fun add(status: Status): Result<Boolean> {
             return kotlin.runCatching {
                 transaction {
-                    StatusTable.insert(status)
+                    StatusTable.insert {
+                        it[userId] = status.userId
+                        it[this.status] = status.status
+                        it[time] = status.time
+                    }.insertedCount != 0
                 }
             }
         }
 
-        fun getAll(): Result<List<Status>> = kotlin.runCatching {
-            transaction {
-                StatusTable.innerJoin(UserTable).selectAll().toStatusList()
-            }
-        }
+//        fun getAll(): Result<List<Status>> = kotlin.runCatching {
+//            transaction {
+//                StatusTable.innerJoin(UserTable).selectAll().toStatusList()
+//            }
+//        }
 
-        fun getLatest(): Result<List<Status>> {
+        fun getLatest(): Result<List<StatusToDisplay>> {
             return kotlin.runCatching {
                 transaction {
                     val maxId = StatusTable.id.max().alias("maxid")
@@ -85,12 +146,12 @@ class StatusRepository {
                         onColumn = u2[StatusTable.userId],
                         otherColumn = UserTable.id
                     )
-                        .selectAll()
+                        .slice(StatusTable.columns + UserTable.columns)
+                        .select { UserTable.display eq true }
                         .map {
-                            Status(
+                            StatusToDisplay(
                                 user = it.toUser(),
                                 status = it[u2[StatusTable.status]],
-                                id = it[u2[StatusTable.id]],
                                 time = it[u2[StatusTable.time]]
                             )
                         }

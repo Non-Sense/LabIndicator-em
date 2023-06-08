@@ -1,8 +1,10 @@
 package com.n0n5ense.labindicator.database
 
 import com.n0n5ense.labindicator.common.Permissions
-import com.n0n5ense.labindicator.database.entity.Permission
-import com.n0n5ense.labindicator.database.entity.*
+import com.n0n5ense.labindicator.database.table.PermissionTable
+import com.n0n5ense.labindicator.database.table.StatusTable
+import com.n0n5ense.labindicator.database.table.UserPermissionTable
+import com.n0n5ense.labindicator.database.table.UserTable
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.batchInsert
@@ -20,10 +22,10 @@ fun connectToDatabase(databasePath: String) {
 private fun initDatabase() {
     transaction {
         val permissionTableCreated = !PermissionTable.exists()
-        SchemaUtils.create(UserTable, PermissionTable, UserPermissionsTable, StatusTable)
+        SchemaUtils.create(UserTable, PermissionTable, UserPermissionTable, StatusTable)
         if(permissionTableCreated) {
             PermissionTable.batchInsert(Permissions.values().asSequence()) {
-                from(Permission(it))
+                this[PermissionTable.id] = it
             }
         }
     }

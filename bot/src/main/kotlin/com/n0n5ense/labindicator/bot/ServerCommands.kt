@@ -10,12 +10,14 @@ import net.dv8tion.jda.api.interactions.commands.build.OptionData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 
 internal enum class ServerCommands(
+    val commandName: String,
     val description: String,
     val descriptionJp: String? = null,
     val options: List<OptionData> = listOf(),
     val subCommands: List<SubcommandData> = listOf()
 ) {
     S(
+        commandName = "s",
         description = StringAsset.updateCommandDescription,
         descriptionJp = StringAsset.updateCommandDescriptionJp,
         options = listOf(
@@ -32,6 +34,7 @@ internal enum class ServerCommands(
         )
     ),
     STATUS(
+        commandName = "status",
         description = StringAsset.updateCommandDescription,
         descriptionJp = StringAsset.updateCommandDescriptionJp,
         options = listOf(
@@ -49,6 +52,7 @@ internal enum class ServerCommands(
         )
     ),
     WILL_RETURN(
+        commandName = "will-return",
         description = StringAsset.willReturnCommandDescription,
         descriptionJp = StringAsset.willReturnCommandDescriptionJp,
         options = listOf(
@@ -70,6 +74,20 @@ internal enum class ServerCommands(
                 .addChoices(Choice("0", 0), Choice("30", 30)),
         )
     ),
+    ADD_ME(
+        commandName = "add-me",
+        description = "add you to LabIndicator user",
+        descriptionJp = "インジケータのユーザとして登録します",
+        options = listOf(
+            OptionData(
+                OptionType.STRING,
+                "name",
+                "your real name (to display name)",
+                true
+            )
+                .setDescriptionLocalization(DiscordLocale.JAPANESE, "本名(表示される名前)")
+        )
+    )
     ;
 
     sealed class MemberCommand {

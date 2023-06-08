@@ -32,7 +32,7 @@ dependencies {
     implementation("org.mindrot:jbcrypt:0.4")
 
 
-    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.7.10")
 }
 
 tasks.test {

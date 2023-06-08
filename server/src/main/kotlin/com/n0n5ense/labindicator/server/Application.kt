@@ -17,7 +17,6 @@ fun startServer(
         factory = Netty,
         port = port
     ) {
-        configureSecurity(tokenSecret)
         install(ContentNegotiation) {
             json(Json {
                 prettyPrint = false
@@ -25,6 +24,7 @@ fun startServer(
             })
         }
         install(Routing)
+        configureSecurity(tokenSecret)
         configureRouting()
     }.start(true)
 

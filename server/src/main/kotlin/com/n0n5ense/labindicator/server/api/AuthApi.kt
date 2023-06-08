@@ -1,9 +1,10 @@
-package com.n0n5ense.labindicator.server
+package com.n0n5ense.labindicator.server.api
 
-import com.n0n5ense.labindicator.database.entity.User
+import com.n0n5ense.labindicator.database.dto.User
 import com.n0n5ense.labindicator.database.repository.UserRepository
+import com.n0n5ense.labindicator.server.Security
 import com.n0n5ense.labindicator.server.model.AuthIdentity
-import com.n0n5ense.labindicator.server.model.ErrorMessage
+import com.n0n5ense.labindicator.server.model.ResponseMessage
 import com.n0n5ense.labindicator.server.model.RefreshToken
 import com.n0n5ense.labindicator.server.model.TokenPair
 import io.ktor.http.HttpStatusCode.Companion.InternalServerError
@@ -23,20 +24,20 @@ internal fun Route.authApi() {
             val identity = call.receive<AuthIdentity>()
             val user = UserRepository.get(identity.id).getOrElse {
                 logger.warn(it.stackTraceToString())
-                call.respond(InternalServerError, ErrorMessage("server error"))
+                call.respond(InternalServerError, ResponseMessage("server error"))
                 return@post
             }
             if(user?.password == null || !user.isActive) {
-                call.respond(Unauthorized, ErrorMessage("unauthorized"))
+                call.respond(Unauthorized, ResponseMessage("unauthorized"))
                 return@post
             }
             if(!BCrypt.checkpw(identity.password, user.password)) {
-                call.respond(Unauthorized, ErrorMessage("unauthorized"))
+                call.respond(Unauthorized, ResponseMessage("unauthorized"))
                 return@post
             }
             val tokenPair = makeTokenPair(user)
             if(tokenPair == null) {
-                call.respond(Unauthorized, ErrorMessage("unauthorized"))
+                call.respond(Unauthorized, ResponseMessage("unauthorized"))
                 return@post
             }
             call.respond(OK, tokenPair)
@@ -46,21 +47,21 @@ internal fun Route.authApi() {
             val receivedToken = call.receive<RefreshToken>()
             val userId = Security.validateRefreshToken(receivedToken)
             if(userId == null) {
-                call.respond(Unauthorized, ErrorMessage("unauthorized"))
+                call.respond(Unauthorized, ResponseMessage("unauthorized"))
                 return@post
             }
             val user = UserRepository.get(userId.id).getOrElse {
                 logger.warn(it.stackTraceToString())
-                call.respond(InternalServerError, ErrorMessage("server error"))
+                call.respond(InternalServerError, ResponseMessage("server error"))
                 return@post
             }
             if(user == null || !user.isActive) {
-                call.respond(Unauthorized, ErrorMessage("unauthorized"))
+                call.respond(Unauthorized, ResponseMessage("unauthorized"))
                 return@post
             }
             val tokenPair = makeTokenPair(user)
             if(tokenPair == null) {
-                call.respond(Unauthorized, ErrorMessage("unauthorized"))
+                call.respond(Unauthorized, ResponseMessage("unauthorized"))
                 return@post
             }
             call.respond(OK, tokenPair)

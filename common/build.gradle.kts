@@ -8,7 +8,7 @@ group = "com.n0n5ense"
 version = "1.0"
 
 dependencies {
-    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.7.10")
     implementation("org.jetbrains.kotlin:kotlin-reflect:1.7.20")
 }
 
