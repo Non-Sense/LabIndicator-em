@@ -5,6 +5,7 @@ import com.n0n5ense.labindicator.common.RoomStatus
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IdTable
 import org.jetbrains.exposed.dao.id.LongIdTable
+import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.javatime.timestamp
@@ -23,7 +24,7 @@ internal open class StringIdTable(
     override val primaryKey by lazy { super.primaryKey ?: PrimaryKey(id) }
 }
 
-internal object UserTable: StringIdTable("user") {
+internal object UserTable: UUIDTable("user") {
     val name = text("name")
     val grade = text("grade")
     val discordId = text("discordId").uniqueIndex().nullable()
@@ -39,13 +40,18 @@ internal object PermissionTable: IdTable<Permissions>("permission") {
 }
 
 internal object UserPermissionTable: Table("user_permissions") {
-    val userId = text("text_id").references(UserTable.id)
+    val userId = uuid("text_id").references(UserTable.id)
     val permissionId = enumerationByName<Permissions>("permission_id", 127).references(PermissionTable.id)
     override val primaryKey: PrimaryKey = PrimaryKey(userId, permissionId)
 }
 
 internal object StatusTable: LongIdTable("status") {
-    val userId = text("user_id").references(UserTable.id)
+    val userId = uuid("user_id").references(UserTable.id)
     val status = enumerationByName<RoomStatus>("status", 32)
     val time = timestamp("time").default(Instant.now())
+}
+
+internal object StatusMessageTable: LongIdTable("status_message") {
+    val index = integer("index")
+    val messageId = text("message_id")
 }

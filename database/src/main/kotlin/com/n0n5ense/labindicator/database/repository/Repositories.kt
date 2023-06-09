@@ -10,6 +10,7 @@ import com.n0n5ense.labindicator.database.table.UserTable
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
 
 private fun ResultRow.toUser(): User {
     return User(
@@ -52,37 +53,75 @@ class UserRepository {
             }
         }
 
-        fun exists(id: String): Result<Boolean> {
+        fun exists(userId: UUID): Result<Boolean> {
             return kotlin.runCatching {
                 transaction {
-                    UserTable.select { UserTable.id eq id }.limit(1).count()
+                    UserTable.select { UserTable.id eq userId }.limit(1).count()
                 } != 0L
             }
         }
 
-        fun get(id: String): Result<User?> {
+        fun existsByDiscordId(discordId: String): Result<Boolean> {
             return kotlin.runCatching {
                 transaction {
-                    UserTable.select { UserTable.id eq id }
+                    UserTable.select { UserTable.discordId eq discordId }.limit(1).count()
+                } != 0L
+            }
+        }
+
+        fun get(userId: UUID): Result<User?> {
+            return kotlin.runCatching {
+                transaction {
+                    UserTable.select { UserTable.id eq userId }
                         .firstOrNull()?.toUser()
                 }
             }
         }
 
-        fun getUserPermissions(id: String): Result<List<Permissions>> {
+        fun getByDiscordId(discordId: String): Result<User?> {
             return kotlin.runCatching {
                 transaction {
-                    UserPermissionTable.select { UserPermissionTable.userId eq id }
+                    UserTable.select { UserTable.discordId eq discordId }
+                        .firstOrNull()?.toUser()
+                }
+            }
+        }
+
+        fun getUserIdByDiscordId(discordId: String): Result<UUID?> {
+            return kotlin.runCatching {
+                transaction {
+                    UserTable.select { UserTable.discordId eq discordId }
+                        .adjustSlice { UserTable.slice(UserTable.id) }
+                        .firstOrNull()?.get(UserTable.id)?.value
+                }
+            }
+        }
+
+        fun getUserPermissions(userId: UUID): Result<List<Permissions>> {
+            return kotlin.runCatching {
+                transaction {
+                    UserPermissionTable.select { UserPermissionTable.userId eq userId }
                         .map { it[UserPermissionTable.permissionId] }
                 }
             }
         }
 
-        fun hasPermission(id: String, permission: Permissions): Result<Boolean> {
+        fun hasPermission(userId: UUID, permission: Permissions): Result<Boolean> {
             return kotlin.runCatching {
                 transaction {
                     UserPermissionTable.select {
-                        (UserPermissionTable.userId eq id) and (UserPermissionTable.permissionId eq permission)
+                        (UserPermissionTable.userId eq userId) and (UserPermissionTable.permissionId eq permission)
+                    }.count() != 0L
+                }
+            }
+        }
+
+        fun hasPermissionByDiscordId(discordId: String, permission: Permissions): Result<Boolean> {
+            return kotlin.runCatching {
+                val user = getByDiscordId(discordId).getOrThrow()!!
+                transaction {
+                    UserPermissionTable.select {
+                        (UserPermissionTable.userId eq user.userId) and (UserPermissionTable.permissionId eq permission)
                     }.count() != 0L
                 }
             }

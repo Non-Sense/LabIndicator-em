@@ -23,7 +23,7 @@ class LabIndicatorBot(
         }
 
         override fun addMe(event: SlashCommandInteractionEvent) {
-            userCommandHandler.addUser(event)
+            userCommandHandler.addMe(event)
         }
     }
 

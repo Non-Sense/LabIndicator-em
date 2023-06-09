@@ -11,7 +11,6 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import io.ktor.util.pipeline.*
 import java.time.Instant
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -20,7 +19,7 @@ internal fun Instant.toServeString() = this.atZone(ZoneId.systemDefault()).forma
 internal fun List<com.n0n5ense.labindicator.database.dto.StatusToDisplay>.toStatusList(): StatusList {
     val list = this.map {
         Status(
-            user = UserInfo(it.user.userId, it.user.name, it.user.grade),
+            user = UserInfo(it.user.name, it.user.grade),
             status = it.status.name,
             time = it.time.toServeString()
         )
@@ -32,9 +31,4 @@ internal fun PipelineContext<Unit, ApplicationCall>.getJwtPayload() = call.princ
 
 internal fun checkPermissionFromPayload(payload: Payload, permission: Permissions): Result<Boolean> {
     return UserRepository.hasPermission(payload.getClaim("id").asString(), permission)
-}
-
-internal inline fun <T> T.runIf(predicate: (T) -> Boolean, block: () -> Unit) {
-    if(predicate(this))
-        block()
 }

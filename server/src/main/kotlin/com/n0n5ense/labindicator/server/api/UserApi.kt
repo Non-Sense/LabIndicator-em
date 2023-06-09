@@ -2,6 +2,7 @@ package com.n0n5ense.labindicator.server.api
 
 import com.n0n5ense.labindicator.common.Permissions
 import com.n0n5ense.labindicator.common.RoomStatus
+import com.n0n5ense.labindicator.common.runIf
 import com.n0n5ense.labindicator.database.dto.Status
 import com.n0n5ense.labindicator.database.repository.StatusRepository
 import com.n0n5ense.labindicator.database.repository.UserRepository
@@ -9,7 +10,6 @@ import com.n0n5ense.labindicator.server.checkPermissionFromPayload
 import com.n0n5ense.labindicator.server.getJwtPayload
 import com.n0n5ense.labindicator.server.model.PostStatus
 import com.n0n5ense.labindicator.server.model.ResponseMessage
-import com.n0n5ense.labindicator.server.runIf
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.Forbidden
 import io.ktor.http.HttpStatusCode.Companion.InternalServerError
