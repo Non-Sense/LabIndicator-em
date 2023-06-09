@@ -9,7 +9,7 @@ import com.n0n5ense.labindicator.database.repository.UserRepository
 
 
 fun main() {
-    connectToDatabase("H:/dbs/lb2.db")
+    connectToDatabase("C:/db/lb2.db")
 //    val user = User("test1","test 1", "M2")
 //    println(UserRepository.exists("test1"))
 

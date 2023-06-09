@@ -1,5 +1,6 @@
 package com.n0n5ense.labindicator.bot
 
+import com.n0n5ense.labindicator.common.Grade
 import com.n0n5ense.labindicator.common.RoomStatus
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
@@ -85,7 +86,15 @@ internal enum class ServerCommands(
                 "your real name (to display name)",
                 true
             )
-                .setDescriptionLocalization(DiscordLocale.JAPANESE, "本名(表示される名前)")
+                .setDescriptionLocalization(DiscordLocale.JAPANESE, "本名(表示される名前)"),
+            OptionData(
+                OptionType.STRING,
+                "grade",
+                "your grade",
+                true,
+            )
+                .setDescriptionLocalization(DiscordLocale.JAPANESE, "学年")
+                .addChoices(Grade.values().map { Choice(it.name, it.name) })
         )
     )
     ;

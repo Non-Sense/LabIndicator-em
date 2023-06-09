@@ -11,27 +11,13 @@ class LabIndicatorBot(
     private val guildId: Long
 ) {
     private val jda = JDABuilder.createDefault(discordBotToken).build()
-    private val userCommandHandler = UserCommandHandler(jda)
-
-    private val commandProcessor = object: CommandProcessor {
-        override fun updateStatus(event: SlashCommandInteractionEvent) {
-            println("update")
-        }
-
-        override fun willReturn(event: SlashCommandInteractionEvent) {
-            println("will return")
-        }
-
-        override fun addMe(event: SlashCommandInteractionEvent) {
-            userCommandHandler.addMe(event)
-        }
-    }
+    private val commandHandler = CommandHandler(jda)
 
     fun start() {
         jda.awaitReady()
 
         initLocalSlashCommand(guildId)
-        jda.addEventListener(SlashCommandListener(commandProcessor))
+        jda.addEventListener(SlashCommandListener(commandHandler))
 
     }
 
@@ -50,7 +36,7 @@ class LabIndicatorBot(
 
 }
 
-private interface CommandProcessor {
+internal interface CommandProcessor {
     fun updateStatus(event: SlashCommandInteractionEvent)
     fun willReturn(event: SlashCommandInteractionEvent)
     fun addMe(event: SlashCommandInteractionEvent)
@@ -58,10 +44,10 @@ private interface CommandProcessor {
 
 private class SlashCommandListener(
     private val commandProcessor: CommandProcessor
-): ListenerAdapter() {
+) : ListenerAdapter() {
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
         val command = ServerCommands.values().find { event.name == it.commandName } ?: return
-        when(command) {
+        when (command) {
             ServerCommands.S,
             ServerCommands.STATUS -> {
                 commandProcessor.updateStatus(event)
