@@ -7,10 +7,10 @@ import java.time.Instant
 import java.util.*
 
 data class User(
-    val userId: UUID = Generators.timeBasedReorderedGenerator().generate(),
     val name: String,
     val grade: String,
     val discordId: String? = null,
+    val userId: UUID = Generators.timeBasedReorderedGenerator().generate(),
     val password: String? = null,
     val isActive: Boolean = true,
     val display: Boolean = true,

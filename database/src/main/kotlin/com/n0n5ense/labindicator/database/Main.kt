@@ -14,27 +14,27 @@ fun main() {
 //    println(UserRepository.exists("test1"))
 
 //    StatusRepository.getAll().also {  it.fold({ println(it)},{it.printStackTrace()}) }
-    val u1 = UserRepository.add(User("test1","test 1", "M2")).getOrThrow()
-    val u2 = UserRepository.add(User("test2","test 2", "M1")).getOrThrow()
-    val u3 = UserRepository.add(User("test3","test 3", "B4")).getOrThrow()
+    val u1 = UserRepository.add(User(name = "test 1", grade = "M2")).getOrThrow()
+    val u2 = UserRepository.add(User(name = "test 2", grade = "M1")).getOrThrow()
+    val u3 = UserRepository.add(User(name = "test 3", grade = "B4")).getOrThrow()
 
-    StatusRepository.add(Status("test1", RoomStatus.Home))
-    StatusRepository.add(Status("test2", RoomStatus.Home))
-    StatusRepository.add(Status("test3", RoomStatus.Home))
-    StatusRepository.add(Status("test1", RoomStatus.Lecture))
-    StatusRepository.add(Status("test3", RoomStatus.Meal))
-    StatusRepository.add(Status("test1", RoomStatus.AroundHere))
+    StatusRepository.add(Status(u1.userId, RoomStatus.Home))
+    StatusRepository.add(Status(u2.userId, RoomStatus.Home))
+    StatusRepository.add(Status(u3.userId, RoomStatus.Home))
+    StatusRepository.add(Status(u1.userId, RoomStatus.Lecture))
+    StatusRepository.add(Status(u3.userId, RoomStatus.Meal))
+    StatusRepository.add(Status(u1.userId, RoomStatus.AroundHere))
 
     val u4 = User(
-        "test4", "test 4", "M2", null, "\$2a\$10\$eDRcJNICUkvLPPpPkPmA5O8ELhyh/a37F11QhNsc/5YnPulSaKjgS",
+        "test 4", "M2", password = "\$2a\$10\$eDRcJNICUkvLPPpPkPmA5O8ELhyh/a37F11QhNsc/5YnPulSaKjgS",
         permissions = listOf(Permissions.Admin, Permissions.EditOtherUser)
     )
     UserRepository.add(u4)
 
-    val u5 = User("test5", "test 5", "B3", discordId = "t1")
-    val u6 = User("test6", "test 6", "B3", discordId = "t1")
-    UserRepository.add(u5).onFailure { println(it) }
-    UserRepository.add(u6).onFailure { println(it) }
+    val u5 = User("test 5", "B3", discordId = "t1")
+    val u6 = User("test 6", "B3", discordId = "t1")
+    UserRepository.add(u5).onFailure { println(it) }.onSuccess { println(it) }
+    UserRepository.add(u6).onFailure { println(it) }.onSuccess { println(it) }
 
 //    StatusRepository.add(Status(User.fromUserId("sdlfkj"), RoomStatus.Meal)).onFailure {
 //        it.printStackTrace()

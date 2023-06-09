@@ -13,13 +13,14 @@ import io.ktor.util.pipeline.*
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.*
 
 internal fun Instant.toServeString() = this.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_INSTANT)
 
 internal fun List<com.n0n5ense.labindicator.database.dto.StatusToDisplay>.toStatusList(): StatusList {
     val list = this.map {
         Status(
-            user = UserInfo(it.user.name, it.user.grade),
+            user = UserInfo(it.user.userId, it.user.name, it.user.grade),
             status = it.status.name,
             time = it.time.toServeString()
         )
@@ -30,5 +31,5 @@ internal fun List<com.n0n5ense.labindicator.database.dto.StatusToDisplay>.toStat
 internal fun PipelineContext<Unit, ApplicationCall>.getJwtPayload() = call.principal<JWTPrincipal>()?.payload!!
 
 internal fun checkPermissionFromPayload(payload: Payload, permission: Permissions): Result<Boolean> {
-    return UserRepository.hasPermission(payload.getClaim("id").asString(), permission)
+    return UserRepository.hasPermission(UUID.fromString(payload.getClaim("id").asString()), permission)
 }

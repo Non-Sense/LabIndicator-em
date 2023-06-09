@@ -50,7 +50,7 @@ class Security {
             val jwt = kotlin.runCatching {
                 refreshTokenVerifier.verify(token.refresh)!!
             }.getOrElse { return null }
-            return jwt.claims["id"]?.asString()?.let { UserId(it) }
+            return jwt.claims["id"]?.asString()?.let { UserId(UUID.fromString(it)) }
         }
 
         fun createRefreshToken(user: User): RefreshToken? {
@@ -59,7 +59,7 @@ class Security {
             return JWT.create()
                 .withExpiresAt(Date(Date().time + 86400000L))
                 .withIssuedAt(Date())
-                .withClaim("id", user.userId)
+                .withClaim("id", user.userId.toString())
                 .withClaim("ref", true)
                 .withAudience(audience)
                 .sign(algorithm)
@@ -73,7 +73,7 @@ class Security {
                 .withExpiresAt(Date(Date().time + 300000L))
                 .withIssuedAt(Date())
                 .withClaim("acs", true)
-                .withClaim("id", user.userId)
+                .withClaim("id", user.userId.toString())
                 .withAudience(audience)
                 .sign(algorithm)
                 .let { AccessToken(it) }

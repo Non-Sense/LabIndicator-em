@@ -16,6 +16,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.slf4j.LoggerFactory
+import java.util.*
 
 internal fun Route.statusApi() {
     val logger = LoggerFactory.getLogger("StatusApi")!!
@@ -34,7 +35,7 @@ internal fun Route.statusApi() {
             post {
                 val status = call.receive<PostStatus>()
                 val payload = getJwtPayload()
-                val userId = payload.getClaim("id").asString()
+                val userId = UUID.fromString(payload.getClaim("id").asString())
                 val enumStatus = kotlin.runCatching { RoomStatus.valueOf(status.status) }.getOrElse {
                     call.respond(BadRequest, ResponseMessage("invalid status name"))
                     return@post

@@ -1,6 +1,7 @@
 package com.n0n5ense.labindicator.database.repository
 
 import com.n0n5ense.labindicator.common.Permissions
+import com.n0n5ense.labindicator.database.ConflictException
 import com.n0n5ense.labindicator.database.dto.Status
 import com.n0n5ense.labindicator.database.dto.StatusToDisplay
 import com.n0n5ense.labindicator.database.dto.User
@@ -36,19 +37,22 @@ class UserRepository {
             this[UserTable.display] = user.display
         }
 
-        fun add(user: User): Result<Boolean> {
+        fun add(user: User): Result<User> {
             return kotlin.runCatching {
                 transaction {
-                    val insertedCount = UserTable.insertIgnore {
+                    val insertedResult = UserTable.insertIgnore {
                         it.from(user)
-                    }.insertedCount
-                    if(user.permissions.isNotEmpty()) {
+                    }
+                    if (insertedResult.insertedCount == 0) {
+                        throw ConflictException()
+                    }
+                    if (user.permissions.isNotEmpty()) {
                         UserPermissionTable.batchInsert(user.permissions) {
                             this[UserPermissionTable.permissionId] = it
                             this[UserPermissionTable.userId] = user.userId
                         }
                     }
-                    insertedCount != 0
+                    insertedResult.resultedValues?.first()?.toUser()!!
                 }
             }
         }

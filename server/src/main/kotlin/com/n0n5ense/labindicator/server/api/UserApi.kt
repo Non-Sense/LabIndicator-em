@@ -22,6 +22,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
 import org.slf4j.LoggerFactory
+import java.util.*
 
 internal fun Route.userApi() {
     val logger = LoggerFactory.getLogger("UserApi")!!
@@ -66,6 +67,6 @@ internal fun Route.userApi() {
     }
 }
 
-private fun PipelineContext<Unit, ApplicationCall>.getUserIdParameter(): String {
-    return call.parameters["userId"]!!
+private fun PipelineContext<Unit, ApplicationCall>.getUserIdParameter(): UUID {
+    return UUID.fromString(call.parameters["userId"]!!)
 }
