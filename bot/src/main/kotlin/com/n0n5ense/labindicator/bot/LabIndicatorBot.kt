@@ -40,6 +40,8 @@ internal interface CommandProcessor {
     fun updateStatus(event: SlashCommandInteractionEvent)
     fun willReturn(event: SlashCommandInteractionEvent)
     fun addMe(event: SlashCommandInteractionEvent)
+    fun updateMe(event: SlashCommandInteractionEvent)
+    fun setup(event: SlashCommandInteractionEvent)
 }
 
 private class SlashCommandListener(
@@ -57,6 +59,12 @@ private class SlashCommandListener(
             }
             ServerCommands.ADD_ME -> {
                 commandProcessor.addMe(event)
+            }
+            ServerCommands.UPDATE_ME -> {
+                commandProcessor.updateMe(event)
+            }
+            ServerCommands.SETUP -> {
+                commandProcessor.setup(event)
             }
         }
     }

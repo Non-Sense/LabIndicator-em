@@ -49,9 +49,11 @@ internal object StatusTable: LongIdTable("status") {
     val userId = uuid("user_id").references(UserTable.id)
     val status = enumerationByName<RoomStatus>("status", 32)
     val time = timestamp("time").default(Instant.now())
+    val backHour = integer("back_hour").nullable().default(null)
+    val backMinute = integer("back_minute").nullable().default(null)
 }
 
 internal object StatusMessageTable: LongIdTable("status_message") {
     val index = integer("index")
-    val messageId = text("message_id")
+    val messageId = long("message_id")
 }

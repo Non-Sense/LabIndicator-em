@@ -20,11 +20,20 @@ data class User(
 data class Status(
     val userId: UUID,
     val status: RoomStatus,
+    val backHour: Int? = null,
+    val backMinute: Int? = null,
     val time: Instant = Instant.now()
 )
 
 data class StatusToDisplay(
     val user: User,
     val status: RoomStatus,
+    val backHour: Int?,
+    val backMinute: Int?,
     val time: Instant = Instant.now()
+)
+
+data class StatusMessage(
+    val index: Int,
+    val messageId: Long
 )

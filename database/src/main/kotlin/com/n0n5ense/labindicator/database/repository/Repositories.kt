@@ -131,13 +131,13 @@ class UserRepository {
             }
         }
 
-        fun update(user: User): Result<Int> {
+        fun update(user: User): Result<Boolean> {
             return kotlin.runCatching {
                 transaction {
                     UserTable.update(where = { UserTable.id eq user.userId }) {
                         it.from(user)
                     }
-                }
+                } != 0
             }
         }
     }
@@ -152,6 +152,8 @@ class StatusRepository {
                         it[userId] = status.userId
                         it[this.status] = status.status
                         it[time] = status.time
+                        it[backHour] = status.backHour
+                        it[backMinute] = status.backMinute
                     }.insertedCount != 0
                 }
             }
@@ -190,12 +192,14 @@ class StatusRepository {
                         otherColumn = UserTable.id
                     )
                         .slice(StatusTable.columns + UserTable.columns)
-                        .select { UserTable.display eq true }
+                        .select { (UserTable.display eq true) and (UserTable.isActive eq true) }
                         .map {
                             StatusToDisplay(
                                 user = it.toUser(),
                                 status = it[u2[StatusTable.status]],
-                                time = it[u2[StatusTable.time]]
+                                time = it[u2[StatusTable.time]],
+                                backHour = it[u2[StatusTable.backHour]],
+                                backMinute = it[u2[StatusTable.backMinute]]
                             )
                         }
                 }

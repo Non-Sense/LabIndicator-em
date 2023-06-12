@@ -2,8 +2,6 @@ package com.n0n5ense.labindicator.bot
 
 import com.n0n5ense.labindicator.common.Grade
 import com.n0n5ense.labindicator.common.RoomStatus
-import net.dv8tion.jda.api.entities.User
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.DiscordLocale
 import net.dv8tion.jda.api.interactions.commands.Command.Choice
 import net.dv8tion.jda.api.interactions.commands.OptionType
@@ -19,34 +17,34 @@ internal enum class ServerCommands(
 ) {
     S(
         commandName = "s",
-        description = StringAsset.updateCommandDescription,
-        descriptionJp = StringAsset.updateCommandDescriptionJp,
+        description = "Update your status",
+        descriptionJp = "入室状態を更新します",
         options = listOf(
             OptionData(
                 OptionType.STRING,
-                StringAsset.updateOptionName,
-                StringAsset.updateOptionDescription,
+                "status",
+                "Your status",
                 true
             )
-                .setNameLocalization(DiscordLocale.JAPANESE, StringAsset.updateOptionNameJp)
-                .setDescriptionLocalization(DiscordLocale.JAPANESE, StringAsset.updateOptionDescriptionJp)
+                .setNameLocalization(DiscordLocale.JAPANESE, "状態")
+                .setDescriptionLocalization(DiscordLocale.JAPANESE, "在室状態")
                 .addChoices(RoomStatus.values().filter { it != RoomStatus.WillReturnAt }
                     .map { Choice(it.alias, it.name) })
         )
     ),
     STATUS(
         commandName = "status",
-        description = StringAsset.updateCommandDescription,
-        descriptionJp = StringAsset.updateCommandDescriptionJp,
+        description = "Update your status",
+        descriptionJp = "入室状態を更新します",
         options = listOf(
             OptionData(
                 OptionType.STRING,
-                StringAsset.updateOptionName,
-                StringAsset.updateOptionDescription,
+                "status",
+                "Your status",
                 true
             )
-                .setNameLocalization(DiscordLocale.JAPANESE, StringAsset.updateOptionNameJp)
-                .setDescriptionLocalization(DiscordLocale.JAPANESE, StringAsset.updateOptionDescriptionJp)
+                .setNameLocalization(DiscordLocale.JAPANESE, "状態")
+                .setDescriptionLocalization(DiscordLocale.JAPANESE, "在室状態")
                 .addChoices(RoomStatus.values().filter { it != RoomStatus.WillReturnAt }.map {
                     Choice(it.english, it.name).setNameLocalization(DiscordLocale.JAPANESE, it.japanese)
                 })
@@ -54,24 +52,24 @@ internal enum class ServerCommands(
     ),
     WILL_RETURN(
         commandName = "will-return",
-        description = StringAsset.willReturnCommandDescription,
-        descriptionJp = StringAsset.willReturnCommandDescriptionJp,
+        description = """Set status to "Will return at"""",
+        descriptionJp = "「何時に戻る」状態に設定します",
         options = listOf(
             OptionData(
                 OptionType.INTEGER,
-                StringAsset.hour,
-                StringAsset.descriptionHour,
+                "hour",
+                "Hour(0~23)",
                 true
             )
-                .setDescriptionLocalization(DiscordLocale.JAPANESE, StringAsset.descriptionHourJp)
+                .setDescriptionLocalization(DiscordLocale.JAPANESE, "時(0~23)")
                 .addChoices((0L..23L).map { Choice(it.toString(), it) }),
             OptionData(
                 OptionType.INTEGER,
-                StringAsset.minute,
-                StringAsset.descriptionMinute,
+                "minute",
+                "Minute(0 or 30)",
                 true
             )
-                .setDescriptionLocalization(DiscordLocale.JAPANESE, StringAsset.descriptionMinuteJp)
+                .setDescriptionLocalization(DiscordLocale.JAPANESE, "分(0か30)")
                 .addChoices(Choice("0", 0), Choice("30", 30)),
         )
     ),
@@ -96,66 +94,40 @@ internal enum class ServerCommands(
                 .setDescriptionLocalization(DiscordLocale.JAPANESE, "学年")
                 .addChoices(Grade.values().map { Choice(it.name, it.name) })
         )
+    ),
+    UPDATE_ME(
+        commandName = "update-me",
+        description = "update your account info",
+        descriptionJp = "ユーザ情報を更新します",
+        options = listOf(
+            OptionData(
+                OptionType.STRING,
+                "name",
+                "your real name (to display name)",
+                false
+            )
+                .setDescriptionLocalization(DiscordLocale.JAPANESE, "本名(表示される名前)"),
+            OptionData(
+                OptionType.STRING,
+                "grade",
+                "your grade",
+                false,
+            )
+                .setDescriptionLocalization(DiscordLocale.JAPANESE, "学年")
+                .addChoices(Grade.values().map { Choice(it.name, it.name) }),
+            OptionData(
+                OptionType.BOOLEAN,
+                "enable",
+                "enable/disable your account",
+                false
+            )
+                .setDescriptionLocalization(DiscordLocale.JAPANESE, "アカウントの有効/無効化")
+        )
+    ),
+    SETUP(
+        commandName = "setup",
+        description = "test"
     )
     ;
 
-    sealed class MemberCommand {
-        companion object {
-            private val genericError = Error(StringAsset.memberCommandGenericError)
-
-            fun parseEvent(event: SlashCommandInteractionEvent): MemberCommand {
-                return when(event.subcommandName) {
-                    StringAsset.memberAddSubCommandName -> Add.parseEvent(event)
-                    StringAsset.memberRemoveSubCommandName -> Remove.parseEvent(event)
-                    StringAsset.memberUpdateSubCommandName -> Update.parseEvent(event)
-                    else -> Error("Unknown command")
-                }
-            }
-        }
-
-        data class Error(
-            val massage: String
-        ): MemberCommand()
-
-        data class Add(
-            val user: User,
-            val name: String,
-            val order: Int
-        ): MemberCommand() {
-            companion object {
-                fun parseEvent(event: SlashCommandInteractionEvent): MemberCommand {
-                    val user = event.getOption(StringAsset.memberUserOptionName)?.asUser ?: return genericError
-                    val name = event.getOption(StringAsset.memberNameOptionName)?.asString ?: return genericError
-                    val order = event.getOption(StringAsset.memberOrderOptionName)?.asInt ?: return genericError
-                    return Add(user, name, order)
-                }
-            }
-        }
-
-        data class Remove(
-            val user: User
-        ): MemberCommand() {
-            companion object {
-                fun parseEvent(event: SlashCommandInteractionEvent): MemberCommand {
-                    val user = event.getOption(StringAsset.memberUserOptionName)?.asUser ?: return genericError
-                    return Remove(user)
-                }
-            }
-        }
-
-        data class Update(
-            val user: User,
-            val name: String?,
-            val order: Int?
-        ): MemberCommand() {
-            companion object {
-                fun parseEvent(event: SlashCommandInteractionEvent): MemberCommand {
-                    val user = event.getOption(StringAsset.memberUserOptionName)?.asUser ?: return genericError
-                    val name = event.getOption(StringAsset.memberNameOptionName)?.asString
-                    val order = event.getOption(StringAsset.memberOrderOptionName)?.asInt
-                    return Update(user, name, order)
-                }
-            }
-        }
-    }
 }
