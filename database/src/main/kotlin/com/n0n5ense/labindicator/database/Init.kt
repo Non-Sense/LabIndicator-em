@@ -1,7 +1,9 @@
 package com.n0n5ense.labindicator.database
 
 import com.n0n5ense.labindicator.common.Permissions
+import com.n0n5ense.labindicator.database.table.*
 import com.n0n5ense.labindicator.database.table.PermissionTable
+import com.n0n5ense.labindicator.database.table.StatusMessageTable
 import com.n0n5ense.labindicator.database.table.StatusTable
 import com.n0n5ense.labindicator.database.table.UserPermissionTable
 import com.n0n5ense.labindicator.database.table.UserTable
@@ -22,7 +24,7 @@ fun connectToDatabase(databasePath: String) {
 private fun initDatabase() {
     transaction {
         val permissionTableCreated = !PermissionTable.exists()
-        SchemaUtils.create(UserTable, PermissionTable, UserPermissionTable, StatusTable)
+        SchemaUtils.create(UserTable, PermissionTable, UserPermissionTable, StatusTable, StatusMessageTable, ConfigTable)
         if(permissionTableCreated) {
             PermissionTable.batchInsert(Permissions.values().asSequence()) {
                 this[PermissionTable.id] = it

@@ -7,6 +7,7 @@ import org.jetbrains.exposed.dao.id.IdTable
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.sql.Expression
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.javatime.timestamp
 import java.time.Instant
@@ -48,7 +49,7 @@ internal object UserPermissionTable: Table("user_permissions") {
 internal object StatusTable: LongIdTable("status") {
     val userId = uuid("user_id").references(UserTable.id)
     val status = enumerationByName<RoomStatus>("status", 32)
-    val time = timestamp("time").default(Instant.now())
+    val time = timestamp("time").clientDefault { Instant.now() }
     val backHour = integer("back_hour").nullable().default(null)
     val backMinute = integer("back_minute").nullable().default(null)
 }
@@ -56,4 +57,8 @@ internal object StatusTable: LongIdTable("status") {
 internal object StatusMessageTable: LongIdTable("status_message") {
     val index = integer("index")
     val messageId = long("message_id")
+}
+
+internal object ConfigTable: StringIdTable("config") {
+    val value = text("value")
 }

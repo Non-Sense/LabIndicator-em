@@ -54,17 +54,14 @@ enum class RoomStatus(
     Unknown("unknown", "Unknown", "不明", "unknown");
 
     companion object {
-        private val objects by lazy {
-            RoomStatus::class.nestedClasses.filter {
-                it.isFinal && it.isSubclassOf(RoomStatus::class)
-            }.map { it.objectInstance as RoomStatus }
-        }
-        fun values(): List<RoomStatus> = objects.filter { it == Unknown }
-        fun valueOf(name: String): RoomStatus = objects.find { it.name == name } ?: Unknown
-        fun getWillReturnDisplayString(hour: Int, minute: Int): Pair<String, String> {
+        fun getWillReturnDisplayString(hour: Int, minute: Int): String {
             if(minute == 0)
-                return "${hour}時に戻る" to "${WillReturnAt.english} $hour o'clock"
-            return "$hour:${"%02d".format(minute)}に戻る" to "${WillReturnAt.english} $hour:${"%02d".format(minute)}"
+                return "${hour}時に戻る"
+            return "$hour:${"%02d".format(minute)}に戻る"
+        }
+
+        fun findValue(str: String): RoomStatus? {
+            return kotlin.runCatching { valueOf(str) }.getOrNull()
         }
     }
 }

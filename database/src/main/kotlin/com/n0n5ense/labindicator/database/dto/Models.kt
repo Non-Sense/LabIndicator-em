@@ -20,6 +20,7 @@ data class User(
 data class Status(
     val userId: UUID,
     val status: RoomStatus,
+    val memo: String? = null,
     val backHour: Int? = null,
     val backMinute: Int? = null,
     val time: Instant = Instant.now()
