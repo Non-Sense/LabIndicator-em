@@ -42,15 +42,15 @@ enum class RoomStatus(
     val japanese: String,
     val alias: String
 ) {
-    InRoom("inRoom", "In room", "在室", "i"),
-    AroundHere("aroundHere", "Around here", "この辺", "a"),
-    Lecture("lecture", "Lecture/Seminar", "講義/輪講", "l"),
-    Library("library", "Library", "図書館", "lib"),
-    Meal("meal", "Meal", "食事", "m"),
-    RightBack("rightBack", "Right back", "すぐ戻る", "r"),
+    InRoom("inRoom", "In room", "在室", "in"),
+    AroundHere("aroundHere", "Around here", "この辺", "ar"),
+    Lecture("lecture", "Lecture/Seminar", "講義/輪講", "lc"),
+    Library("library", "Library", "図書館", "lb"),
+    Meal("meal", "Meal", "食事", "me"),
+    RightBack("rightBack", "Right back", "すぐ戻る", "rb"),
     WillReturnAt("willReturnAt", "Will return at", "何時に戻る", "wr"),
     Exercise("exercise", "Exercise", "運動", "ex"),
-    Home("home", "Home", "帰宅", "h"),
+    Home("home", "Home", "帰宅", "hm"),
     Unknown("unknown", "Unknown", "不明", "unknown");
 
     companion object {

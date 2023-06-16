@@ -52,6 +52,7 @@ internal object StatusTable: LongIdTable("status") {
     val time = timestamp("time").clientDefault { Instant.now() }
     val backHour = integer("back_hour").nullable().default(null)
     val backMinute = integer("back_minute").nullable().default(null)
+    val note = text("note").nullable().default(null)
 }
 
 internal object StatusMessageTable: LongIdTable("status_message") {

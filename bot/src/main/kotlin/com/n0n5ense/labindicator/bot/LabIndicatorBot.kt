@@ -2,6 +2,7 @@ package com.n0n5ense.labindicator.bot
 
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.DiscordLocale
 import net.dv8tion.jda.api.interactions.commands.build.Commands
@@ -37,7 +38,7 @@ class LabIndicatorBot(
 }
 
 internal interface CommandProcessor {
-    fun updateStatus(event: SlashCommandInteractionEvent)
+    fun updateStatus(event: SlashCommandInteractionEvent, isWillReturn: Boolean)
     fun willReturn(event: SlashCommandInteractionEvent)
     fun addMe(event: SlashCommandInteractionEvent)
     fun updateMe(event: SlashCommandInteractionEvent)
@@ -52,10 +53,10 @@ private class SlashCommandListener(
         when (command) {
             ServerCommands.S,
             ServerCommands.STATUS -> {
-                commandProcessor.updateStatus(event)
+                commandProcessor.updateStatus(event, isWillReturn = false)
             }
             ServerCommands.WILL_RETURN -> {
-                commandProcessor.willReturn(event)
+                commandProcessor.updateStatus(event, isWillReturn = true)
             }
             ServerCommands.ADD_ME -> {
                 commandProcessor.addMe(event)
@@ -67,5 +68,11 @@ private class SlashCommandListener(
                 commandProcessor.setup(event)
             }
         }
+    }
+
+    override fun onButtonInteraction(event: ButtonInteractionEvent) {
+        println(event)
+        println(event.interaction.button.id)
+        event.reply("ok").setEphemeral(true).queue()
     }
 }

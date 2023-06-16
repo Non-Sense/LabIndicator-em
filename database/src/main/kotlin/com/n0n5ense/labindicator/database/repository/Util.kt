@@ -3,6 +3,7 @@ package com.n0n5ense.labindicator.database.repository
 import com.n0n5ense.labindicator.database.dto.User
 import com.n0n5ense.labindicator.database.table.UserTable
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.transactions.transaction
 
 internal fun ResultRow.toUser(): User {
     return User(
@@ -14,4 +15,10 @@ internal fun ResultRow.toUser(): User {
         isActive = this[UserTable.isActive],
         display = this[UserTable.display]
     )
+}
+
+internal fun<T> transactionRunCatching(block: () -> T) = runCatching {
+    transaction {
+        block()
+    }
 }

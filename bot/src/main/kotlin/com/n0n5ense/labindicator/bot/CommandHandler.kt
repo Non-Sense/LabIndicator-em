@@ -17,7 +17,7 @@ internal class CommandHandler(
     private val logger = LoggerFactory.getLogger("CommandHandler")
     private val statusBoard = StatusBoard(jda)
 
-    override fun updateStatus(event: SlashCommandInteractionEvent) {
+    override fun updateStatus(event: SlashCommandInteractionEvent, isWillReturn: Boolean) {
         val uuid = UserRepository.getUserIdByDiscordId(event.user.id).getOrElse {
             logger.warn(it.stackTraceToString())
             event.reply("Server error.").setEphemeral(true).queue()
@@ -32,9 +32,11 @@ internal class CommandHandler(
             event.reply("Invalid option. \"${event.getOption("status")?.asString}\"").setEphemeral(true).queue()
             return
         }
+        val note = event.getOption("note")?.asString
         StatusRepository.add(Status(
             userId = uuid,
-            status = status
+            status = status,
+            note = note
         ))
         event.reply("ok").setEphemeral(true).queue()
         statusBoard.update(event)
@@ -67,6 +69,10 @@ internal class CommandHandler(
             event.reply("Server error.").setEphemeral(true).queue()
             return
         }
+        StatusRepository.add(Status(
+            userId = created.userId,
+            status = RoomStatus.Unknown
+        ))
         event.reply("Your account was created.\nID: ${created.userId}").setEphemeral(true).queue()
     }
 
@@ -100,6 +106,10 @@ internal class CommandHandler(
     override fun setup(event: SlashCommandInteractionEvent) {
         statusBoard.setup(event.channel.idLong, event)
         event.reply("ok").setEphemeral(true).queue()
+    }
+
+    private fun setupButtons() {
+
     }
 
 }

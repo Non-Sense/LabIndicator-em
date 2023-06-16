@@ -1,5 +1,7 @@
 package com.n0n5ense.labindicator.bot
 
+import com.n0n5ense.labindicator.common.ButtonChannelIdKeyName
+import com.n0n5ense.labindicator.common.ButtonMessageIdKeyName
 import com.n0n5ense.labindicator.common.ChannelIdKeyName
 import com.n0n5ense.labindicator.common.RoomStatus
 import com.n0n5ense.labindicator.database.dto.StatusMessage
@@ -10,16 +12,14 @@ import com.n0n5ense.labindicator.database.repository.StatusRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.MessageEmbed
+import net.dv8tion.jda.api.entities.emoji.Emoji
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.components.buttons.Button
 import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-
-data class StatusBoardRow(
-    val messageId: Long
-)
 
 class StatusBoard(
     private val jda: JDA
@@ -27,15 +27,15 @@ class StatusBoard(
 
     private val logger = LoggerFactory.getLogger("StatusBoard")
 
-    fun setup(channelId: Long, event: SlashCommandInteractionEvent) {
+    fun setup(channelId: Long, event: SlashCommandInteractionEvent): CommandResult<Unit> {
         val channel = jda.getTextChannelById(channelId) ?: kotlin.run {
-            event.reply("Channel not found").setEphemeral(true).queue()
-            return
+            event.reply("Channel not found.").setEphemeral(true).queue()
+            return CommandResult.Failure("Channel not found.")
         }
         val userStatuses = StatusRepository.getLatest().getOrElse {
             logger.warn(it.toString())
             event.reply("Server error.").setEphemeral(true).queue()
-            return
+            return CommandResult.Failure("Server error.")
         }
 
         deleteExistsMessages()
@@ -54,22 +54,67 @@ class StatusBoard(
                 StatusMessageRepository.add(s)
             }
         }
+
+        addButton(channelId)
+
+        return CommandResult.Success(Unit)
     }
 
-    private fun deleteExistsMessages() {
+    private fun addButton(channelId: Long): CommandResult<Unit> {
+        val channel = jda.getTextChannelById(channelId) ?: kotlin.run {
+            return CommandResult.Failure("Channel not found.")
+        }
+
+        val existsChannel = ConfigRepository.get(ButtonChannelIdKeyName).getOrNull()
+        val existsMessage = ConfigRepository.get(ButtonMessageIdKeyName).getOrNull()
+        if(existsChannel != null && existsMessage != null) {
+            jda.getTextChannelById(existsChannel)?.apply {
+                kotlin.runCatching { deleteMessageById(existsMessage) }
+            }
+        }
+
+        channel.sendMessage("Update your status")
+            .addActionRow(
+                Button.success(RoomStatus.InRoom.name, RoomStatus.InRoom.japanese),
+                Button.primary(RoomStatus.AroundHere.name, RoomStatus.AroundHere.japanese),
+                Button.primary(RoomStatus.Lecture.name, RoomStatus.Lecture.japanese),
+                Button.primary(RoomStatus.Library.name, RoomStatus.Library.japanese),
+            )
+            .addActionRow(
+                Button.primary(RoomStatus.Meal.name, RoomStatus.Meal.japanese),
+                Button.primary(RoomStatus.RightBack.name, RoomStatus.RightBack.japanese),
+                Button.primary(RoomStatus.Exercise.name, RoomStatus.Exercise.japanese),
+                Button.danger(RoomStatus.Home.name, RoomStatus.Home.japanese),
+            )
+            .queue {
+                ConfigRepository.set(ButtonChannelIdKeyName, channelId.toString())
+                ConfigRepository.set(ButtonMessageIdKeyName, it.id)
+            }
+
+        return CommandResult.Success(Unit)
+    }
+
+    private fun deleteExistsMessages(): CommandResult<Unit> {
         val channelId = ConfigRepository.get(ChannelIdKeyName).getOrElse {
             logger.warn(it.toString())
-            return
-        } ?: return
+            return CommandResult.Failure("Server error.")
+        } ?: return CommandResult.Failure("Channel not found.")
 
-        val channel = jda.getTextChannelById(channelId) ?: return
+        val channel = jda.getTextChannelById(channelId) ?: return CommandResult.Failure("Channel not found.")
         val messageIds = StatusMessageRepository.getAll().getOrElse {
             logger.warn(it.toString())
-            return
+            return CommandResult.Failure("Server error.")
         }.map {
             it.messageId.toString()
         }
-        channel.deleteMessagesByIds(messageIds).queue()
+        kotlin.runCatching {
+            when(messageIds.size) {
+                0 -> {}
+                1 -> channel.deleteMessageById(messageIds.first()).queue()
+                else -> channel.deleteMessagesByIds(messageIds).queue()
+            }
+        }
+        return CommandResult.Success(Unit)
     }
 
     fun update(event: SlashCommandInteractionEvent) {
@@ -114,6 +159,7 @@ private data class ShowData(
     val name: String,
     val status: RoomStatus,
     val time: Instant,
+    val note: String?,
     val hour: Int? = null,
     val minute: Int? = null
 ) {
@@ -124,6 +170,7 @@ private data class ShowData(
                 name = status.user.name,
                 status = status.status,
                 time = status.time,
+                note = status.note,
                 hour = status.backHour,
                 minute = status.backMinute
             )
@@ -149,7 +196,9 @@ private fun makeEmbeddedMessage(status: ShowData): MessageEmbed {
 //        addField(status.grade, "", true)
         addField("`${status.grade}`  ${status.name}", "", false)
         addField("$emoji\t${status.status.japanese}", "", false)
-
+        status.note?.let {
+            addField(it,"",false)
+        }
         setColor(color)
         setFooter(status.time.toShortDisplayString())
     }.build()

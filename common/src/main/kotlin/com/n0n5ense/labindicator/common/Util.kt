@@ -6,3 +6,5 @@ inline fun <T> T.runIf(predicate: (T) -> Boolean, block: () -> Unit) {
 }
 
 const val ChannelIdKeyName = "channelId"
+const val ButtonMessageIdKeyName = "buttonMessageId"
+const val ButtonChannelIdKeyName = "buttonChannelId"
