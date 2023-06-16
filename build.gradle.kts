@@ -17,4 +17,6 @@ dependencies {
     implementation(project(":bot"))
     implementation(project(":server"))
     implementation(project(":database"))
+
+    implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.5")
 }
