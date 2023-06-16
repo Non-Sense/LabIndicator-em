@@ -12,8 +12,6 @@ import com.n0n5ense.labindicator.database.repository.StatusRepository
 import net.dv8tion.jda.api.EmbedBuilder
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.MessageEmbed
-import net.dv8tion.jda.api.entities.emoji.Emoji
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.components.buttons.Button
 import org.slf4j.LoggerFactory
 import java.awt.Color
@@ -27,14 +25,12 @@ class StatusBoard(
 
     private val logger = LoggerFactory.getLogger("StatusBoard")
 
-    fun setup(channelId: Long, event: SlashCommandInteractionEvent): CommandResult<Unit> {
+    fun setup(channelId: Long): CommandResult {
         val channel = jda.getTextChannelById(channelId) ?: kotlin.run {
-            event.reply("Channel not found.").setEphemeral(true).queue()
             return CommandResult.Failure("Channel not found.")
         }
         val userStatuses = StatusRepository.getLatest().getOrElse {
             logger.warn(it.toString())
-            event.reply("Server error.").setEphemeral(true).queue()
             return CommandResult.Failure("Server error.")
         }
 
@@ -43,9 +39,6 @@ class StatusBoard(
         ConfigRepository.set(ChannelIdKeyName, channelId.toString())
         userStatuses.forEachIndexed { index, status ->
             val showData = ShowData.fromStatusToDisplay(status)
-//            channel.sendMessage(makeTextMessage(showData)).queue {
-//                StatusMessage(index, it.idLong)
-//            }
             channel.sendMessageEmbeds(makeEmbeddedMessage(showData)).queue {
                 val s = StatusMessage(
                     index = index,
@@ -57,17 +50,17 @@ class StatusBoard(
 
         addButton(channelId)
 
-        return CommandResult.Success(Unit)
+        return CommandResult.Success("ok")
     }
 
-    private fun addButton(channelId: Long): CommandResult<Unit> {
+    private fun addButton(channelId: Long): CommandResult {
         val channel = jda.getTextChannelById(channelId) ?: kotlin.run {
             return CommandResult.Failure("Channel not found.")
         }
 
         val existsChannel = ConfigRepository.get(ButtonChannelIdKeyName).getOrNull()
         val existsMessage = ConfigRepository.get(ButtonMessageIdKeyName).getOrNull()
-        if(existsChannel != null && existsMessage != null) {
+        if (existsChannel != null && existsMessage != null) {
             jda.getTextChannelById(existsChannel)?.apply {
                 kotlin.runCatching { deleteMessageById(existsMessage) }
             }
@@ -91,10 +84,10 @@ class StatusBoard(
                 ConfigRepository.set(ButtonMessageIdKeyName, it.id)
             }
 
-        return CommandResult.Success(Unit)
+        return CommandResult.Success("ok")
     }
 
-    private fun deleteExistsMessages(): CommandResult<Unit> {
+    private fun deleteExistsMessages(): CommandResult {
         val channelId = ConfigRepository.get(ChannelIdKeyName).getOrElse {
             logger.warn(it.toString())
             return CommandResult.Failure("Server error.")
@@ -108,49 +101,41 @@ class StatusBoard(
             it.messageId.toString()
         }
         kotlin.runCatching {
-            when(messageIds.size) {
+            when (messageIds.size) {
                 0 -> {}
                 1 -> channel.deleteMessageById(messageIds.first()).queue()
                 else -> channel.deleteMessagesByIds(messageIds).queue()
             }
         }
-        return CommandResult.Success(Unit)
+        return CommandResult.Success("ok")
     }
 
-    fun update(event: SlashCommandInteractionEvent) {
+    fun update(): CommandResult {
         val messages = StatusMessageRepository.getAll().getOrElse {
             logger.warn(it.stackTraceToString())
-            event.reply("Server error.").setEphemeral(true).queue()
-            return
+            return CommandResult.Failure("Server error.")
         }
         val userStatuses = StatusRepository.getLatest().getOrElse {
             logger.warn(it.toString())
-            event.reply("Server error.").setEphemeral(true).queue()
-            return
+            return CommandResult.Failure("Server error.")
         }
         val channelId = ConfigRepository.get(ChannelIdKeyName).getOrNull()
-        if (channelId == null) {
-            if(!event.isAcknowledged)
-                event.reply("Status board is not setup. run /setup").setEphemeral(true).queue()
-            return
-        }
+            ?: return CommandResult.Failure("Status board is not setup. run /setup")
+
         if (messages.size != userStatuses.size) {
             logger.info("setup messages: messages size = ${messages.size}, users size = ${userStatuses.size}")
-            setup(channelId.toLong(), event)
-            return
+            return setup(channelId.toLong())
         }
 
-        val channel = jda.getTextChannelById(channelId)
-        if (channel == null) {
-            event.reply("Channel not found").setEphemeral(true).queue()
-            return
-        }
+        val channel = jda.getTextChannelById(channelId) ?: return CommandResult.Failure("Channel not found")
+
         messages.zip(userStatuses).forEach {
             channel.editMessageEmbedsById(
                 it.first.messageId,
                 makeEmbeddedMessage(ShowData.fromStatusToDisplay(it.second))
             ).queue()
         }
+        return CommandResult.Success("ok")
     }
 }
 
@@ -193,11 +178,10 @@ private fun makeEmbeddedMessage(status: ShowData): MessageEmbed {
         RoomStatus.Unknown -> Color(0x101010)
     }
     return EmbedBuilder().apply {
-//        addField(status.grade, "", true)
         addField("`${status.grade}`  ${status.name}", "", false)
         addField("$emoji\t${status.status.japanese}", "", false)
         status.note?.let {
-            addField(it,"",false)
+            addField(it, "", false)
         }
         setColor(color)
         setFooter(status.time.toShortDisplayString())
@@ -223,12 +207,6 @@ private fun makeStatusString(showData: ShowData): String {
 private val shortDateFormatter = DateTimeFormatter.ofPattern("MM/dd HH:mm")
 private fun Instant.toShortDisplayString(): String {
     return this.atZone(ZoneId.of("Asia/Tokyo")).format(shortDateFormatter)
-}
-
-private fun makeTextMessage(showData: ShowData): String {
-    val time = showData.time.toShortDisplayString()
-    val s = makeStatusString(showData)
-    return "${getEmoji(showData)}  `${showData.grade}` ${showData.name} \t`$time`\n$s\n"
 }
 
 private fun getEmoji(showData: ShowData): String {
@@ -260,7 +238,7 @@ private fun getEmoji(showData: ShowData): String {
             21 -> "\uD83D\uDD64"
             22 -> "\uD83D\uDD65"
             23 -> "\uD83D\uDD66"
-            else -> "\uD83D\uDD70️"
+            else -> "\uD83D\uDD70"
         }
     }
     return when (showData.status) {

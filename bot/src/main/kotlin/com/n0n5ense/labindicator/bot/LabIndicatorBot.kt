@@ -38,11 +38,11 @@ class LabIndicatorBot(
 }
 
 internal interface CommandProcessor {
-    fun updateStatus(event: SlashCommandInteractionEvent, isWillReturn: Boolean)
-    fun willReturn(event: SlashCommandInteractionEvent)
-    fun addMe(event: SlashCommandInteractionEvent)
-    fun updateMe(event: SlashCommandInteractionEvent)
-    fun setup(event: SlashCommandInteractionEvent)
+    fun updateStatus(event: SlashCommandInteractionEvent, isWillReturn: Boolean): CommandResult
+    fun willReturn(event: SlashCommandInteractionEvent): CommandResult
+    fun addMe(event: SlashCommandInteractionEvent): CommandResult
+    fun updateMe(event: SlashCommandInteractionEvent): CommandResult
+    fun setup(event: SlashCommandInteractionEvent): CommandResult
 }
 
 private class SlashCommandListener(
@@ -50,7 +50,7 @@ private class SlashCommandListener(
 ) : ListenerAdapter() {
     override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
         val command = ServerCommands.values().find { event.name == it.commandName } ?: return
-        when (command) {
+        val result = when (command) {
             ServerCommands.S,
             ServerCommands.STATUS -> {
                 commandProcessor.updateStatus(event, isWillReturn = false)

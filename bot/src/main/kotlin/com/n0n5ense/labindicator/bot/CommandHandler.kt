@@ -2,7 +2,6 @@ package com.n0n5ense.labindicator.bot
 
 import com.n0n5ense.labindicator.common.RoomStatus
 import com.n0n5ense.labindicator.common.runIf
-import com.n0n5ense.labindicator.database.ConflictException
 import com.n0n5ense.labindicator.database.dto.Status
 import com.n0n5ense.labindicator.database.dto.User
 import com.n0n5ense.labindicator.database.repository.StatusRepository
@@ -12,49 +11,45 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import org.slf4j.LoggerFactory
 
 internal class CommandHandler(
-    private val jda: JDA
-): CommandProcessor {
+    jda: JDA
+) : CommandProcessor {
     private val logger = LoggerFactory.getLogger("CommandHandler")
     private val statusBoard = StatusBoard(jda)
 
-    override fun updateStatus(event: SlashCommandInteractionEvent, isWillReturn: Boolean) {
+    override fun updateStatus(event: SlashCommandInteractionEvent, isWillReturn: Boolean): CommandResult {
         val uuid = UserRepository.getUserIdByDiscordId(event.user.id).getOrElse {
             logger.warn(it.stackTraceToString())
-            event.reply("Server error.").setEphemeral(true).queue()
-            return
-        }
-        if(uuid == null) {
-            event.reply("Your account is not exists.").setEphemeral(true).queue()
-            return
-        }
+            return CommandResult.Failure("Server error.")
+        } ?: return CommandResult.Failure("Your account is not exists.")
+
         val status = event.getOption("status")?.asString?.let { RoomStatus.findValue(it) }
-        if(status == null) {
-            event.reply("Invalid option. \"${event.getOption("status")?.asString}\"").setEphemeral(true).queue()
-            return
-        }
+        status ?: return CommandResult.Failure("Invalid option. \"${event.getOption("status")?.asString}\"")
+
         val note = event.getOption("note")?.asString
-        StatusRepository.add(Status(
-            userId = uuid,
-            status = status,
-            note = note
-        ))
-        event.reply("ok").setEphemeral(true).queue()
-        statusBoard.update(event)
+        StatusRepository.add(
+            Status(
+                userId = uuid,
+                status = status,
+                note = note
+            )
+        )
+
+        statusBoard.update()
+        return CommandResult.Success("ok")
     }
 
-    override fun willReturn(event: SlashCommandInteractionEvent) {
+    override fun willReturn(event: SlashCommandInteractionEvent): CommandResult {
         println("will return")
+        return CommandResult.Success("ok")
     }
 
-    override fun addMe(event: SlashCommandInteractionEvent) {
+    override fun addMe(event: SlashCommandInteractionEvent): CommandResult {
         val userDiscordId = event.user.id
         UserRepository.existsByDiscordId(userDiscordId).getOrElse {
             logger.warn(it.stackTraceToString())
-            event.reply("Server error.").setEphemeral(true).queue()
-            return
+            return CommandResult.Failure("Server error.")
         }.runIf({ it }) {
-            event.reply("Your account is already exists.").setEphemeral(true).queue()
-            return
+            return CommandResult.Failure("Your account is already exists.")
         }
         val newUser = User(
             name = event.getOption("name")?.asString!!,
@@ -66,26 +61,22 @@ internal class CommandHandler(
             newUser
         ).getOrElse {
             logger.warn(it.stackTraceToString())
-            event.reply("Server error.").setEphemeral(true).queue()
-            return
+            return CommandResult.Failure("Server error.")
         }
-        StatusRepository.add(Status(
-            userId = created.userId,
-            status = RoomStatus.Unknown
-        ))
-        event.reply("Your account was created.\nID: ${created.userId}").setEphemeral(true).queue()
+        StatusRepository.add(
+            Status(
+                userId = created.userId,
+                status = RoomStatus.Unknown
+            )
+        )
+        return CommandResult.Success("Your account was created.\nID: ${created.userId}")
     }
 
-    override fun updateMe(event: SlashCommandInteractionEvent) {
+    override fun updateMe(event: SlashCommandInteractionEvent): CommandResult {
         val user = UserRepository.getByDiscordId(event.user.id).getOrElse {
             logger.warn(it.stackTraceToString())
-            event.reply("Server error.").setEphemeral(true).queue()
-            return
-        }
-        if(user == null) {
-            event.reply("Your account is not exists.").setEphemeral(true).queue()
-            return
-        }
+            return CommandResult.Failure("Server error.")
+        } ?: return CommandResult.Failure("Your account is not exists.")
 
         val newUser = user.copy(
             name = event.getOption("name")?.asString ?: user.name,
@@ -94,18 +85,15 @@ internal class CommandHandler(
         )
         UserRepository.update(newUser).getOrElse {
             logger.warn(it.stackTraceToString())
-            event.reply("Server error.").setEphemeral(true).queue()
-            return
-        }.runIf({!it}) {
-            event.reply("Your account is not exists.").setEphemeral(true).queue()
-            return
+            return CommandResult.Failure("Server error.")
+        }.runIf({ !it }) {
+            return CommandResult.Failure("Your account is not exists.")
         }
-        event.reply("Your account info was updated.").setEphemeral(true).queue()
+        return CommandResult.Success("Your account info was updated.")
     }
 
-    override fun setup(event: SlashCommandInteractionEvent) {
-        statusBoard.setup(event.channel.idLong, event)
-        event.reply("ok").setEphemeral(true).queue()
+    override fun setup(event: SlashCommandInteractionEvent): CommandResult {
+        return statusBoard.setup(event.channel.idLong)
     }
 
     private fun setupButtons() {
