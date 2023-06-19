@@ -120,7 +120,7 @@ class StatusBoard(
             return CommandResult.Failure("Server error.")
         }
         val channelId = ConfigRepository.get(ChannelIdKeyName).getOrNull()
-            ?: return CommandResult.Failure("Status board is not setup. run /setup")
+            ?: return CommandResult.Failure("Your status is updated. But status board is not setup. run /lbadmin setup")
 
         if (messages.size != userStatuses.size) {
             logger.info("setup messages: messages size = ${messages.size}, users size = ${userStatuses.size}")

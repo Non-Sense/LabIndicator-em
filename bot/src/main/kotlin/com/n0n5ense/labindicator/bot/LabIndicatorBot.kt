@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.DiscordLocale
 import net.dv8tion.jda.api.interactions.commands.build.Commands
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 
 class LabIndicatorBot(
     discordBotToken: String,
@@ -28,6 +29,9 @@ class LabIndicatorBot(
             addSubcommands(it.subCommands)
             it.descriptionJp?.let { d -> setDescriptionLocalization(DiscordLocale.JAPANESE, d) }
         }
+    } + Commands.slash("lbadmin", "admin commands").apply {
+        addSubcommands(SubcommandData("setup", "setup a status board"))
+        addSubcommandGroups()
     }
 
     private fun initLocalSlashCommand(guildId: Long) {
@@ -67,6 +71,11 @@ private class SlashCommandListener(
             ServerCommands.SETUP -> {
                 commandProcessor.setup(event)
             }
+        }
+
+        when(result) {
+            is CommandResult.Failure -> event.reply(result.message).setEphemeral(true).queue()
+            is CommandResult.Success -> event.reply(result.message).setEphemeral(true).queue()
         }
     }
 

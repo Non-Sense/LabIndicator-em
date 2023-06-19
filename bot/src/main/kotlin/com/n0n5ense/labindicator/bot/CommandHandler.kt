@@ -22,17 +22,30 @@ internal class CommandHandler(
             return CommandResult.Failure("Server error.")
         } ?: return CommandResult.Failure("Your account is not exists.")
 
-        val status = event.getOption("status")?.asString?.let { RoomStatus.findValue(it) }
+        val status = if (isWillReturn) {
+            RoomStatus.WillReturnAt
+        } else {
+            event.getOption("status")?.asString?.let { RoomStatus.findValue(it) }
+        }
+
         status ?: return CommandResult.Failure("Invalid option. \"${event.getOption("status")?.asString}\"")
 
         val note = event.getOption("note")?.asString
-        StatusRepository.add(
-            Status(
-                userId = uuid,
-                status = status,
-                note = note
-            )
+        val newStatus = Status(
+            userId = uuid,
+            status = status,
+            note = note
         )
+
+        if (isWillReturn) {
+            val hour = event.getOption("hour")?.asInt
+            val minute = event.getOption("minute")?.asInt
+            if (hour == null || minute == null)
+                return CommandResult.Failure("Invalid options. hour:$hour minute$minute")
+            newStatus.copy(backHour = hour, backMinute = minute)
+        } else {
+            newStatus
+        }.let { StatusRepository.add(it) }
 
         statusBoard.update()
         return CommandResult.Success("ok")
