@@ -45,6 +45,7 @@ class StatusRepository {
             )
                 .slice(u2.columns + UserTable.columns)
                 .select { (UserTable.display eq true) and (UserTable.isActive eq true) }
+                .orderBy(UserTable.name)
                 .map {
                     StatusToDisplay(
                         user = it.toUser(),

@@ -13,4 +13,8 @@
     <logger name="Exposed" level="trace" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
+
+    <logger name="net.dv8tion.jda" level="warn" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
 </configuration>

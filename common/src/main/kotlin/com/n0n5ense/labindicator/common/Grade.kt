@@ -1,12 +1,13 @@
 package com.n0n5ense.labindicator.common
 
 enum class Grade {
-    B1,
-    B2,
-    B3,
-    B4,
-    M1,
-    M2,
+    教員,
     Dr,
-    教員
+    M2,
+    M1,
+    B4,
+    B3,
+    B2,
+    B1,
+    他
 }

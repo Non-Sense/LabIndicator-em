@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.n0n5ense"
-version = "1.0"
+version = "0.1.0"
 
 allprojects {
     repositories {
@@ -20,4 +20,15 @@ dependencies {
     implementation(project(":common"))
 
     implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.5")
+}
+
+application {
+    mainClass.value("MainKt")
+}
+
+val jar by tasks.getting(Jar::class) {
+    manifest {
+        attributes["Main-Class"] = "MainKt"
+        attributes["Multi-Release"] = true
+    }
 }

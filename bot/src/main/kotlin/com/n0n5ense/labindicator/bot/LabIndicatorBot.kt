@@ -37,7 +37,7 @@ class LabIndicatorBot(
         guild.updateCommands().addCommands(commands).queue()
     }
 
-    private fun handleCommand(event: SlashCommandInteractionEvent): CommandResult? {
+    private fun handleCommandEvent(event: SlashCommandInteractionEvent): CommandResult? {
         val userId = event.user.id
         val result = when(ServerCommands.values().find { event.name == it.commandName }) {
             ServerCommands.S,
@@ -85,9 +85,17 @@ class LabIndicatorBot(
         return result
     }
 
+    private fun handleButtonEvent(event: ButtonInteractionEvent): CommandResult {
+        return commandUseCase.updateStatus(
+            discordUserId = event.user.id,
+            status = event.interaction.button.id ?: return notEnoughOptionError,
+            note = null
+        )
+    }
+
     private val listener = object: ListenerAdapter() {
         override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
-            when(val result = handleCommand(event)) {
+            when(val result = handleCommandEvent(event)) {
                 is CommandResult.Failure -> event.reply(result.message).setEphemeral(true).queue()
                 is CommandResult.Success -> event.reply(result.message).setEphemeral(true).queue()
                 null -> event.reply("Command not found.").setEphemeral(true).queue()
@@ -95,9 +103,10 @@ class LabIndicatorBot(
         }
 
         override fun onButtonInteraction(event: ButtonInteractionEvent) {
-            println(event)
-            println(event.interaction.button.id)
-            event.reply("not implement yet").setEphemeral(true).queue()
+            when(val result = handleButtonEvent(event)) {
+                is CommandResult.Failure -> event.reply(result.message).setEphemeral(true).queue()
+                is CommandResult.Success -> event.deferEdit().queue()
+            }
         }
     }
 

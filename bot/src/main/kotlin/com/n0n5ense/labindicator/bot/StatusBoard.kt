@@ -1,9 +1,6 @@
 package com.n0n5ense.labindicator.bot
 
-import com.n0n5ense.labindicator.common.ButtonChannelIdKeyName
-import com.n0n5ense.labindicator.common.ButtonMessageIdKeyName
-import com.n0n5ense.labindicator.common.ChannelIdKeyName
-import com.n0n5ense.labindicator.common.RoomStatus
+import com.n0n5ense.labindicator.common.*
 import com.n0n5ense.labindicator.database.dto.StatusMessage
 import com.n0n5ense.labindicator.database.dto.StatusToDisplay
 import com.n0n5ense.labindicator.database.repository.ConfigRepository
@@ -37,16 +34,18 @@ internal class StatusBoard(
         deleteExistsMessages()
 
         ConfigRepository.set(ChannelIdKeyName, channelId.toString())
-        userStatuses.forEachIndexed { index, status ->
-            val showData = ShowData.fromStatusToDisplay(status)
-            channel.sendMessageEmbeds(makeEmbeddedMessage(showData)).queue {
-                val s = StatusMessage(
-                    index = index,
-                    messageId = it.idLong
-                )
-                StatusMessageRepository.add(s)
+        userStatuses
+            .sortedBy { kotlin.runCatching { Grade.valueOf(it.user.grade) }.getOrNull()?.ordinal ?: Int.MAX_VALUE }
+            .forEachIndexed { index, status ->
+                val showData = ShowData.fromStatusToDisplay(status)
+                channel.sendMessageEmbeds(makeEmbeddedMessage(showData)).queue {
+                    val s = StatusMessage(
+                        index = index,
+                        messageId = it.idLong
+                    )
+                    StatusMessageRepository.add(s)
+                }
             }
-        }
 
         setupButton(channelId)
 
@@ -131,8 +130,9 @@ internal class StatusBoard(
         }
 
         val channel = jda.getTextChannelById(channelId) ?: return CommandResult.Failure("Channel not found")
-
-        messages.zip(userStatuses).forEach {
+        val sortedUserStatuses = userStatuses
+            .sortedBy { kotlin.runCatching { Grade.valueOf(it.user.grade) }.getOrNull()?.ordinal ?: Int.MAX_VALUE }
+        messages.zip(sortedUserStatuses).forEach {
             channel.editMessageEmbedsById(
                 it.first.messageId,
                 makeEmbeddedMessage(ShowData.fromStatusToDisplay(it.second))
@@ -192,25 +192,9 @@ private fun makeEmbeddedMessage(status: ShowData): MessageEmbed {
             addField(it, "", false)
         }
         setColor(color)
-        setFooter(status.time.toShortDisplayString())
+        setFooter("updated at ${status.time.toShortDisplayString()}")
     }.build()
 }
-
-private fun makeStatusString(showData: ShowData): String {
-    val lang = when(showData.status) {
-        RoomStatus.InRoom -> "yaml"
-        RoomStatus.Home -> "brainfuck"
-        else -> ""
-    }
-    if(showData.status == RoomStatus.WillReturnAt) {
-        val str = RoomStatus.getWillReturnDisplayString(showData.hour ?: -1, showData.minute ?: -1)
-        return """```$str```"""
-    }
-    return """```$lang
-            |${showData.status.japanese}
-            |```""".trimMargin()
-}
-
 
 private val shortDateFormatter = DateTimeFormatter.ofPattern("MM/dd HH:mm")
 private fun Instant.toShortDisplayString(): String {
