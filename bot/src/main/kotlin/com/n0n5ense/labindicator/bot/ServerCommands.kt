@@ -29,9 +29,7 @@ internal enum class ServerCommands(
                 .setNameLocalization(DiscordLocale.JAPANESE, "状態")
                 .setDescriptionLocalization(DiscordLocale.JAPANESE, "在室状態")
                 .addChoices(
-                    RoomStatus.values()
-                        .filter { it != RoomStatus.WillReturnAt && it != RoomStatus.Unknown }
-                        .map { Choice(it.alias, it.name) }),
+                    RoomStatus.validStatuses.map { Choice(it.alias, it.name) }),
             OptionData(
                 OptionType.STRING,
                 "note",
@@ -56,11 +54,9 @@ internal enum class ServerCommands(
                 .setNameLocalization(DiscordLocale.JAPANESE, "状態")
                 .setDescriptionLocalization(DiscordLocale.JAPANESE, "在室状態")
                 .addChoices(
-                    RoomStatus.values()
-                        .filter { it != RoomStatus.WillReturnAt && it != RoomStatus.Unknown }
-                        .map {
-                            Choice(it.english, it.name).setNameLocalization(DiscordLocale.JAPANESE, it.japanese)
-                        }
+                    RoomStatus.validStatuses.map {
+                        Choice(it.english, it.name).setNameLocalization(DiscordLocale.JAPANESE, it.japanese)
+                    }
                 ),
             OptionData(
                 OptionType.STRING,
@@ -154,10 +150,6 @@ internal enum class ServerCommands(
                 .setDescriptionLocalization(DiscordLocale.JAPANESE, "アカウントの有効/無効化")
         )
     ),
-    SETUP(
-        commandName = "setup",
-        description = "test"
-    )
     ;
 
 }

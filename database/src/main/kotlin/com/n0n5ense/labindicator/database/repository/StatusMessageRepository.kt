@@ -18,7 +18,7 @@ class StatusMessageRepository {
         }
 
 
-        fun deleteAll(): Result<Unit> = transactionRunCatching { StatusTable.deleteAll() }
+        fun deleteAll(): Result<Unit> = transactionRunCatching { StatusMessageTable.deleteAll() }
 
         fun getAll(): Result<List<StatusMessage>> = transactionRunCatching {
             StatusMessageTable.selectAll()

@@ -6,20 +6,21 @@ import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.DiscordLocale
 import net.dv8tion.jda.api.interactions.commands.build.Commands
-import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 
 class LabIndicatorBot(
     discordBotToken: String,
     private val guildId: Long
 ) {
     private val jda = JDABuilder.createDefault(discordBotToken).build()
-    private val commandHandler = CommandHandler(jda)
+    private val commandUseCase = CommandUseCase(StatusBoard(jda))
+    private val adminCommand = AdminCommand(commandUseCase)
+    private val notEnoughOptionError = CommandResult.Failure("Not enough input options.")
 
     fun start() {
         jda.awaitReady()
 
         initLocalSlashCommand(guildId)
-        jda.addEventListener(SlashCommandListener(commandHandler))
+        jda.addEventListener(listener)
 
     }
 
@@ -29,59 +30,75 @@ class LabIndicatorBot(
             addSubcommands(it.subCommands)
             it.descriptionJp?.let { d -> setDescriptionLocalization(DiscordLocale.JAPANESE, d) }
         }
-    } + Commands.slash("lbadmin", "admin commands").apply {
-        addSubcommands(SubcommandData("setup", "setup a status board"))
-        addSubcommandGroups()
-    }
+    } + AdminCommand.commands
 
     private fun initLocalSlashCommand(guildId: Long) {
         val guild = jda.getGuildById(guildId) ?: return
         guild.updateCommands().addCommands(commands).queue()
     }
 
-}
-
-internal interface CommandProcessor {
-    fun updateStatus(event: SlashCommandInteractionEvent, isWillReturn: Boolean): CommandResult
-    fun willReturn(event: SlashCommandInteractionEvent): CommandResult
-    fun addMe(event: SlashCommandInteractionEvent): CommandResult
-    fun updateMe(event: SlashCommandInteractionEvent): CommandResult
-    fun setup(event: SlashCommandInteractionEvent): CommandResult
-}
-
-private class SlashCommandListener(
-    private val commandProcessor: CommandProcessor
-) : ListenerAdapter() {
-    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
-        val command = ServerCommands.values().find { event.name == it.commandName } ?: return
-        val result = when (command) {
+    private fun handleCommand(event: SlashCommandInteractionEvent): CommandResult? {
+        val userId = event.user.id
+        val result = when(ServerCommands.values().find { event.name == it.commandName }) {
             ServerCommands.S,
             ServerCommands.STATUS -> {
-                commandProcessor.updateStatus(event, isWillReturn = false)
+                commandUseCase.updateStatus(
+                    discordUserId = userId,
+                    status = event.getOption("status")?.asString ?: return notEnoughOptionError,
+                    note = event.getOption("note")?.asString
+                )
             }
             ServerCommands.WILL_RETURN -> {
-                commandProcessor.updateStatus(event, isWillReturn = true)
+                commandUseCase.updateStatusToWillReturn(
+                    discordUserId = userId,
+                    hour = event.getOption("hour")?.asInt ?: return notEnoughOptionError,
+                    minute = event.getOption("minute")?.asInt ?: return notEnoughOptionError,
+                    note = event.getOption("note")?.asString
+                )
             }
             ServerCommands.ADD_ME -> {
-                commandProcessor.addMe(event)
+                commandUseCase.addUser(
+                    discordUserId = userId,
+                    name = event.getOption("name")?.asString ?: return notEnoughOptionError,
+                    grade = event.getOption("grade")?.asString ?: return notEnoughOptionError,
+                    display = true
+                )
             }
             ServerCommands.UPDATE_ME -> {
-                commandProcessor.updateMe(event)
+                commandUseCase.updateUser(
+                    discordUserId = userId,
+                    name = event.getOption("name")?.asString,
+                    grade = event.getOption("grade")?.asString,
+                    display = true,
+                    isActive = event.getOption("enable")?.asBoolean,
+                    password = null
+                )
             }
-            ServerCommands.SETUP -> {
-                commandProcessor.setup(event)
+            null -> {
+                if(event.name == "lbadmin") {
+                    adminCommand.handler(event)
+                } else {
+                    null
+                }
+            }
+        }
+        return result
+    }
+
+    private val listener = object: ListenerAdapter() {
+        override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
+            when(val result = handleCommand(event)) {
+                is CommandResult.Failure -> event.reply(result.message).setEphemeral(true).queue()
+                is CommandResult.Success -> event.reply(result.message).setEphemeral(true).queue()
+                null -> event.reply("Command not found.").setEphemeral(true).queue()
             }
         }
 
-        when(result) {
-            is CommandResult.Failure -> event.reply(result.message).setEphemeral(true).queue()
-            is CommandResult.Success -> event.reply(result.message).setEphemeral(true).queue()
+        override fun onButtonInteraction(event: ButtonInteractionEvent) {
+            println(event)
+            println(event.interaction.button.id)
+            event.reply("not implement yet").setEphemeral(true).queue()
         }
     }
 
-    override fun onButtonInteraction(event: ButtonInteractionEvent) {
-        println(event)
-        println(event.interaction.button.id)
-        event.reply("ok").setEphemeral(true).queue()
-    }
 }

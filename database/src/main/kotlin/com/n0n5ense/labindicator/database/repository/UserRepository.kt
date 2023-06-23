@@ -80,6 +80,23 @@ class UserRepository {
                 }.count() != 0L
             }
 
+        fun addPermissionByDiscordId(discordId: String, permission: Permissions): Result<Boolean> =
+            transactionRunCatching {
+                val user = getByDiscordId(discordId).getOrThrow()!!
+                UserPermissionTable.insert {
+                    it[userId] = user.userId
+                    it[permissionId] = permission
+                }.insertedCount != 0
+            }
+
+        fun removePermissionByDiscordId(discordId: String, permission: Permissions): Result<Boolean> =
+            transactionRunCatching {
+                val user = getByDiscordId(discordId).getOrThrow()!!
+                UserPermissionTable.deleteWhere {
+                    (UserPermissionTable.userId eq user.userId) and (UserPermissionTable.permissionId eq permission)
+                } != 0
+            }
+
 
         fun update(user: User): Result<Boolean> = transactionRunCatching {
             UserTable.update(where = { UserTable.id eq user.userId }) {

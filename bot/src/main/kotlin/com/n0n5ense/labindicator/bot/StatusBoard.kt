@@ -19,7 +19,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-class StatusBoard(
+internal class StatusBoard(
     private val jda: JDA
 ) {
 
@@ -48,21 +48,23 @@ class StatusBoard(
             }
         }
 
-        addButton(channelId)
+        setupButton(channelId)
 
         return CommandResult.Success("ok")
     }
 
-    private fun addButton(channelId: Long): CommandResult {
+    private fun setupButton(channelId: Long): CommandResult {
         val channel = jda.getTextChannelById(channelId) ?: kotlin.run {
             return CommandResult.Failure("Channel not found.")
         }
 
         val existsChannel = ConfigRepository.get(ButtonChannelIdKeyName).getOrNull()
         val existsMessage = ConfigRepository.get(ButtonMessageIdKeyName).getOrNull()
-        if (existsChannel != null && existsMessage != null) {
+        if(existsChannel != null && existsMessage != null) {
             jda.getTextChannelById(existsChannel)?.apply {
-                kotlin.runCatching { deleteMessageById(existsMessage) }
+                kotlin.runCatching { deleteMessageById(existsMessage).queue() }.onFailure {
+                    logger.warn(it.stackTraceToString())
+                }
             }
         }
 
@@ -101,12 +103,13 @@ class StatusBoard(
             it.messageId.toString()
         }
         kotlin.runCatching {
-            when (messageIds.size) {
+            when(messageIds.size) {
                 0 -> {}
                 1 -> channel.deleteMessageById(messageIds.first()).queue()
                 else -> channel.deleteMessagesByIds(messageIds).queue()
             }
         }
+        StatusMessageRepository.deleteAll()
         return CommandResult.Success("ok")
     }
 
@@ -122,7 +125,7 @@ class StatusBoard(
         val channelId = ConfigRepository.get(ChannelIdKeyName).getOrNull()
             ?: return CommandResult.Failure("Your status is updated. But status board is not setup. run /lbadmin setup")
 
-        if (messages.size != userStatuses.size) {
+        if(messages.size != userStatuses.size) {
             logger.info("setup messages: messages size = ${messages.size}, users size = ${userStatuses.size}")
             return setup(channelId.toLong())
         }
@@ -165,7 +168,7 @@ private data class ShowData(
 
 private fun makeEmbeddedMessage(status: ShowData): MessageEmbed {
     val emoji = getEmoji(status)
-    val color = when (status.status) {
+    val color = when(status.status) {
         RoomStatus.InRoom -> Color(0x66bb6a)
         RoomStatus.AroundHere,
         RoomStatus.Lecture,
@@ -177,9 +180,14 @@ private fun makeEmbeddedMessage(status: ShowData): MessageEmbed {
         RoomStatus.Home -> Color(0xe57373)
         RoomStatus.Unknown -> Color(0x101010)
     }
+    val statusString = if(status.status == RoomStatus.WillReturnAt) {
+        "${status.hour}時${status.minute}に戻る"
+    } else {
+        status.status.japanese
+    }
     return EmbedBuilder().apply {
         addField("`${status.grade}`  ${status.name}", "", false)
-        addField("$emoji\t${status.status.japanese}", "", false)
+        addField("$emoji\t$statusString", "", false)
         status.note?.let {
             addField(it, "", false)
         }
@@ -189,12 +197,12 @@ private fun makeEmbeddedMessage(status: ShowData): MessageEmbed {
 }
 
 private fun makeStatusString(showData: ShowData): String {
-    val lang = when (showData.status) {
+    val lang = when(showData.status) {
         RoomStatus.InRoom -> "yaml"
         RoomStatus.Home -> "brainfuck"
         else -> ""
     }
-    if (showData.status == RoomStatus.WillReturnAt) {
+    if(showData.status == RoomStatus.WillReturnAt) {
         val str = RoomStatus.getWillReturnDisplayString(showData.hour ?: -1, showData.minute ?: -1)
         return """```$str```"""
     }
@@ -213,35 +221,13 @@ private fun getEmoji(showData: ShowData): String {
     fun getReturnTimeEmoji(showData: ShowData): String {
         showData.hour ?: return "\uD83D\uDD70️"
         showData.minute ?: return "\uD83D\uDD70️"
-        return when (showData.hour.mod(12) + if (showData.minute >= 30) 12 else 0) {
-            0 -> "\uD83D\uDD5B"
-            1 -> "\uD83D\uDD50"
-            2 -> "\uD83D\uDD51"
-            3 -> "\uD83D\uDD52"
-            4 -> "\uD83D\uDD53"
-            5 -> "\uD83D\uDD54"
-            6 -> "\uD83D\uDD55"
-            7 -> "\uD83D\uDD56"
-            8 -> "\uD83D\uDD57"
-            9 -> "\uD83D\uDD58"
-            10 -> "\uD83D\uDD59"
-            11 -> "\uD83D\uDD5A"
-            12 -> "\uD83D\uDD67"
-            13 -> "\uD83D\uDD5C"
-            14 -> "\uD83D\uDD5D"
-            15 -> "\uD83D\uDD5E"
-            16 -> "\uD83D\uDD5F"
-            17 -> "\uD83D\uDD60"
-            18 -> "\uD83D\uDD61"
-            19 -> "\uD83D\uDD62"
-            20 -> "\uD83D\uDD63"
-            21 -> "\uD83D\uDD64"
-            22 -> "\uD83D\uDD65"
-            23 -> "\uD83D\uDD66"
-            else -> "\uD83D\uDD70"
-        }
+        val hourIndex = (showData.hour - 1).mod(12)
+        var char = '\uDD50' + hourIndex
+        if(showData.minute >= 30)
+            char += 12
+        return "\uD83D$char"
     }
-    return when (showData.status) {
+    return when(showData.status) {
         RoomStatus.InRoom -> "\uD83D\uDCBB"
         RoomStatus.AroundHere -> "\uD83D\uDEB6"
         RoomStatus.Lecture -> "\uD83D\uDC68\u200D\uD83C\uDFEB"

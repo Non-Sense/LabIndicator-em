@@ -54,6 +54,9 @@ enum class RoomStatus(
     Unknown("unknown", "Unknown", "不明", "unknown");
 
     companion object {
+
+        val validStatuses = values().filter { it != WillReturnAt && it != Unknown }
+
         fun getWillReturnDisplayString(hour: Int, minute: Int): String {
             if(minute == 0)
                 return "${hour}時に戻る"
