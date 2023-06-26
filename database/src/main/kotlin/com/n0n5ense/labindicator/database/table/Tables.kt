@@ -57,6 +57,7 @@ internal object StatusTable: LongIdTable("status") {
 internal object StatusMessageTable: LongIdTable("status_message") {
     val index = integer("index")
     val messageId = long("message_id")
+    val userId = uuid("user_id")
 }
 
 internal object ConfigTable: StringIdTable("config") {

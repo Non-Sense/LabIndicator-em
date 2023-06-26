@@ -15,6 +15,7 @@ import java.awt.Color
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.*
 
 internal class StatusBoard(
     private val jda: JDA
@@ -41,7 +42,8 @@ internal class StatusBoard(
                 channel.sendMessageEmbeds(makeEmbeddedMessage(showData)).queue {
                     val s = StatusMessage(
                         index = index,
-                        messageId = it.idLong
+                        messageId = it.idLong,
+                        userId = status.user.userId
                     )
                     StatusMessageRepository.add(s)
                 }
@@ -59,7 +61,7 @@ internal class StatusBoard(
 
         val existsChannel = ConfigRepository.get(ButtonChannelIdKeyName).getOrNull()
         val existsMessage = ConfigRepository.get(ButtonMessageIdKeyName).getOrNull()
-        if(existsChannel != null && existsMessage != null) {
+        if (existsChannel != null && existsMessage != null) {
             jda.getTextChannelById(existsChannel)?.apply {
                 kotlin.runCatching { deleteMessageById(existsMessage).queue() }.onFailure {
                     logger.warn(it.stackTraceToString())
@@ -102,7 +104,7 @@ internal class StatusBoard(
             it.messageId.toString()
         }
         kotlin.runCatching {
-            when(messageIds.size) {
+            when (messageIds.size) {
                 0 -> {}
                 1 -> channel.deleteMessageById(messageIds.first()).queue()
                 else -> channel.deleteMessagesByIds(messageIds).queue()
@@ -112,7 +114,7 @@ internal class StatusBoard(
         return CommandResult.Success("ok")
     }
 
-    fun update(): CommandResult {
+    fun update(targetUserId: UUID): CommandResult {
         val messages = StatusMessageRepository.getAll().getOrElse {
             logger.warn(it.stackTraceToString())
             return CommandResult.Failure("Server error.")
@@ -124,7 +126,7 @@ internal class StatusBoard(
         val channelId = ConfigRepository.get(ChannelIdKeyName).getOrNull()
             ?: return CommandResult.Failure("Your status is updated. But status board is not setup. run /lbadmin setup")
 
-        if(messages.size != userStatuses.size) {
+        if (messages.size != userStatuses.size) {
             logger.info("setup messages: messages size = ${messages.size}, users size = ${userStatuses.size}")
             return setup(channelId.toLong())
         }
@@ -132,11 +134,21 @@ internal class StatusBoard(
         val channel = jda.getTextChannelById(channelId) ?: return CommandResult.Failure("Channel not found")
         val sortedUserStatuses = userStatuses
             .sortedBy { kotlin.runCatching { Grade.valueOf(it.user.grade) }.getOrNull()?.ordinal ?: Int.MAX_VALUE }
-        messages.zip(sortedUserStatuses).forEach {
+
+        val messageIndex = messages.indexOfFirst { it.userId == targetUserId }
+        val statusIndex = sortedUserStatuses.indexOfFirst { it.user.userId == targetUserId }
+        if (messageIndex != -1 && messageIndex == statusIndex) {
             channel.editMessageEmbedsById(
-                it.first.messageId,
-                makeEmbeddedMessage(ShowData.fromStatusToDisplay(it.second))
+                messages[messageIndex].messageId,
+                makeEmbeddedMessage(ShowData.fromStatusToDisplay(sortedUserStatuses[statusIndex]))
             ).queue()
+        } else {
+            messages.zip(sortedUserStatuses).forEach {
+                channel.editMessageEmbedsById(
+                    it.first.messageId,
+                    makeEmbeddedMessage(ShowData.fromStatusToDisplay(it.second))
+                ).queue()
+            }
         }
         return CommandResult.Success("ok")
     }
@@ -149,7 +161,8 @@ private data class ShowData(
     val time: Instant,
     val note: String?,
     val hour: Int? = null,
-    val minute: Int? = null
+    val minute: Int? = null,
+    val userDiscordId: String?
 ) {
     companion object {
         fun fromStatusToDisplay(status: StatusToDisplay): ShowData {
@@ -160,7 +173,8 @@ private data class ShowData(
                 time = status.time,
                 note = status.note,
                 hour = status.backHour,
-                minute = status.backMinute
+                minute = status.backMinute,
+                userDiscordId = status.user.discordId
             )
         }
     }
@@ -168,7 +182,7 @@ private data class ShowData(
 
 private fun makeEmbeddedMessage(status: ShowData): MessageEmbed {
     val emoji = getEmoji(status)
-    val color = when(status.status) {
+    val color = when (status.status) {
         RoomStatus.InRoom -> Color(0x66bb6a)
         RoomStatus.AroundHere,
         RoomStatus.Lecture,
@@ -180,16 +194,22 @@ private fun makeEmbeddedMessage(status: ShowData): MessageEmbed {
         RoomStatus.Home -> Color(0xe57373)
         RoomStatus.Unknown -> Color(0x101010)
     }
-    val statusString = if(status.status == RoomStatus.WillReturnAt) {
+    val statusString = if (status.status == RoomStatus.WillReturnAt) {
         "${status.hour}時${status.minute}に戻る"
     } else {
         status.status.japanese
     }
     return EmbedBuilder().apply {
-        addField("`${status.grade}`  ${status.name}", "", false)
-        addField("$emoji\t$statusString", "", false)
+        setTitle("`${status.grade}`  ${status.name} \t" + "$emoji\t$statusString")
+
+        //addField("", "`${status.grade}`  ${status.name}", false)
+//        addField("", "$emoji\t$statusString", false)
+
+        val desc = if (status.userDiscordId != null) " <@${status.userDiscordId}>" else ""
+        setDescription(desc + (status.note ?: ""))
         status.note?.let {
-            addField(it, "", false)
+            setDescription(it)
+            //addField("", it, false)
         }
         setColor(color)
         setFooter("updated at ${status.time.toShortDisplayString()}")
@@ -207,11 +227,11 @@ private fun getEmoji(showData: ShowData): String {
         showData.minute ?: return "\uD83D\uDD70️"
         val hourIndex = (showData.hour - 1).mod(12)
         var char = '\uDD50' + hourIndex
-        if(showData.minute >= 30)
+        if (showData.minute >= 30)
             char += 12
         return "\uD83D$char"
     }
-    return when(showData.status) {
+    return when (showData.status) {
         RoomStatus.InRoom -> "\uD83D\uDCBB"
         RoomStatus.AroundHere -> "\uD83D\uDEB6"
         RoomStatus.Lecture -> "\uD83D\uDC68\u200D\uD83C\uDFEB"

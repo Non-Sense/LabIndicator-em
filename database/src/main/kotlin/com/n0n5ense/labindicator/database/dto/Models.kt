@@ -37,5 +37,6 @@ data class StatusToDisplay(
 
 data class StatusMessage(
     val index: Int,
-    val messageId: Long
+    val messageId: Long,
+    val userId: UUID
 )

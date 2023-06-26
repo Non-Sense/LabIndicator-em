@@ -13,6 +13,7 @@ class StatusMessageRepository {
             StatusMessageTable.insert {
                 it[messageId] = statusMessage.messageId
                 it[index] = statusMessage.index
+                it[userId] = statusMessage.userId
             }.insertedCount != 0
         }
 
@@ -25,7 +26,8 @@ class StatusMessageRepository {
                 .map {
                     StatusMessage(
                         index = it[StatusMessageTable.index],
-                        messageId = it[StatusMessageTable.messageId]
+                        messageId = it[StatusMessageTable.messageId],
+                        userId = it[StatusMessageTable.userId]
                     )
                 }
         }

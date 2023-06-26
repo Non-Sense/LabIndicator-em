@@ -35,7 +35,7 @@ internal class CommandUseCase(
 
         StatusRepository.add(newStatus)
 
-        statusBoard.update()
+        statusBoard.update(uuid)
         return CommandResult.Success("ok")
     }
 
@@ -60,7 +60,7 @@ internal class CommandUseCase(
 
         StatusRepository.add(newStatus)
 
-        statusBoard.update()
+        statusBoard.update(uuid)
         return CommandResult.Success("ok")
     }
 
@@ -95,7 +95,7 @@ internal class CommandUseCase(
                 status = RoomStatus.Unknown
             )
         )
-        statusBoard.update()
+        statusBoard.update(created.userId)
         return CommandResult.Success("Account was created.\nID: ${created.userId}")
     }
 
@@ -126,7 +126,7 @@ internal class CommandUseCase(
         }.runIf({ !it }) {
             return CommandResult.Failure("Account is not exists.")
         }
-        statusBoard.update()
+        statusBoard.update(user.userId)
         return CommandResult.Success("Account info was updated.")
     }
 
